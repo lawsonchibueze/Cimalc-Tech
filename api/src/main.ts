@@ -4,6 +4,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
 
 async function bootstrap() {
+  // Railway deployment trigger: runtime behavior is unchanged.
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
   });
