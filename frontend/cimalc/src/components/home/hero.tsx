@@ -45,27 +45,24 @@ export function Hero() {
   const pad = (value: number) => String(value).padStart(2, "0");
 
   return (
-    <section aria-roledescription="carousel" aria-label="Featured categories" className="relative isolate overflow-hidden bg-brand text-white">
+    <section aria-roledescription="carousel" aria-label="Featured categories" className="relative isolate overflow-hidden bg-brand text-white dark:bg-hero">
       {/* Photo layers. Slides cross-fade and drift slowly, so the page feels alive without moving text. */}
       <div className="absolute inset-0 -z-20">
         {slides.map((item, itemIndex) => (
           <HeroBackdrop key={item.key} image={item.image} active={itemIndex === index} reducedMotion={Boolean(reducedMotion)} />
         ))}
       </div>
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-brand via-brand/80 to-brand/10" />
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_88%_12%,rgba(255,255,255,0.22),transparent_45%)]" />
-      <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-60 [background-image:radial-gradient(rgba(255,255,255,0.09)_1px,transparent_1px)] [background-size:26px_26px]" />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
 
       <div className="mx-auto flex relative min-h-[600px] max-w-[1440px] flex-col justify-center px-4 py-14 md:min-h-[min(74svh,700px)] md:px-8 md:py-16">
-        <h1 className="text-display font-extrabold leading-[0.96] tracking-[-0.03em]">
+        <h1 className="[text-shadow:0_2px_24px_rgba(0,0,0,0.5)] text-display font-extrabold leading-[0.96] tracking-[-0.03em]">
           <span className="block">Technology,</span>
           <span className="block">selected</span>
           <span className="block">for you.</span>
         </h1>
         <div className="mt-6 min-h-[4.5rem] max-w-2xl md:mt-8 md:min-h-[5rem]">
           <AnimatePresence mode="wait">
-            <motion.p key={slide.key} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.35 }} className="text-lg leading-8 text-white/90 md:text-xl md:leading-9">{slide.description}</motion.p>
+            <motion.p key={slide.key} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.35 }} className="text-lg leading-8 text-white [text-shadow:0_1px_14px_rgba(0,0,0,0.55)] md:text-xl md:leading-9">{slide.description}</motion.p>
           </AnimatePresence>
         </div>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row md:mt-10">
