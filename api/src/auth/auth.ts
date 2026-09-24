@@ -9,6 +9,7 @@ const betterAuthSecret = process.env.BETTER_AUTH_SECRET;
 const betterAuthUrl = process.env.BETTER_AUTH_URL;
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const uiUrl = process.env.UI_URL;
 
 if (!databaseUrl) {
   throw new Error("DATABASE_URL is required to initialize Better Auth.");
@@ -25,10 +26,19 @@ if (!betterAuthUrl) {
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
+const isProduction = betterAuthUrl.startsWith("https://");
 
 export const auth = betterAuth({
   baseURL: betterAuthUrl,
   secret: betterAuthSecret,
+  trustedOrigins: uiUrl ? [uiUrl] : [],
+  advanced: {
+    defaultCookieAttributes: {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+    },
+  },
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
