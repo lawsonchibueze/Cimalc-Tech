@@ -44,18 +44,22 @@ export class CreateProductDto {
 }
 
 export class ProductImageDto {
+  @IsOptional()
   @IsString()
-  key!: string;
+  key?: string;
 
   @IsString()
   url!: string;
 
+  @IsOptional()
   @IsString()
-  alt!: string;
+  alt?: string;
 
+  @IsOptional()
   @IsBoolean()
-  isPrimary!: boolean;
+  isPrimary?: boolean;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
   position!: number;

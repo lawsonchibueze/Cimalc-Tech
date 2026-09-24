@@ -95,12 +95,13 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto) {
-    await this.ensureCategory(dto.categoryId);
+    const category = await this.ensureCategory(dto.categoryId);
     const images = this.validateImages(dto.images, dto.status);
     const { images: _images, ...productData } = dto;
     return this.prisma.product.create({
       data: {
         ...productData,
+        categoryId: category.id,
         slug: dto.slug || this.makeSlug(dto.name),
         images: { create: images },
       },
@@ -110,7 +111,7 @@ export class ProductsService {
 
   async update(id: string, dto: UpdateProductDto) {
     await this.findById(id);
-    if (dto.categoryId) await this.ensureCategory(dto.categoryId);
+    const category = dto.categoryId ? await this.ensureCategory(dto.categoryId) : undefined;
     const images = dto.images ? this.validateImages(dto.images, dto.status) : undefined;
     const { images: _images, ...productData } = dto;
     return this.prisma.$transaction(async (tx) => {
@@ -119,6 +120,7 @@ export class ProductsService {
         where: { id },
         data: {
           ...productData,
+          ...(category ? { categoryId: category.id } : {}),
           ...(dto.name && !dto.slug ? { slug: this.makeSlug(dto.name) } : {}),
           ...(images ? { images: { create: images } } : {}),
         },
@@ -140,8 +142,11 @@ export class ProductsService {
   }
 
   private async ensureCategory(categoryId: string) {
-    const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
+    const category = await this.prisma.category.findFirst({
+      where: { OR: [{ id: categoryId }, { slug: categoryId }] },
+    });
     if (!category) throw new NotFoundException("Category not found");
+    return category;
   }
 
   private makeSlug(value: string) {
@@ -159,7 +164,13 @@ export class ProductsService {
       images[0].isPrimary = true;
       for (const [index, image] of images.entries()) image.isPrimary = index === 0;
     }
-    return images.map((image, index) => ({ ...image, isPrimary: image.isPrimary, position: image.position ?? index }));
+    return images.map((image, index) => ({
+      key: image.key || image.url,
+      url: image.url,
+      alt: image.alt || "Product image",
+      isPrimary: image.isPrimary ?? index === 0,
+      position: image.position ?? index,
+    }));
   }
 
   private sort(sort: ProductsQueryDto["sort"]): Prisma.ProductOrderByWithRelationInput {
