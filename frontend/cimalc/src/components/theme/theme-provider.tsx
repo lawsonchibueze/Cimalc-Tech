@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 type Theme = "light" | "dark";

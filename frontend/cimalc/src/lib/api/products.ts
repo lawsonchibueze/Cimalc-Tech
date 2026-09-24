@@ -1,37 +1,143 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Product } from "@/types/product";
+import type { Paginated } from "@/types/pagination";
+import type { Product, ProductStatus } from "@/types/product";
 import type { ProductInput } from "@/lib/validations/product";
-import { apiRequest } from "./client";
+import { PLACEHOLDER_IMAGE } from "@/lib/media/image";
+import { apiRequest, toQueryString } from "./client";
 
-type BackendProduct = Record<string, any>;
-type ProductFilters = { page?: number; limit?: number; search?: string; categoryId?: string; sort?: string };
-function buildProductQuery(params?: ProductFilters) { const query = new URLSearchParams(); for (const key of ["page", "limit", "search", "categoryId", "sort"] as const) { const value = params?.[key]; if (value !== undefined && value !== "") query.set(key, String(value)); } return query; }
-const toSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-function mapProduct(item: BackendProduct): Product { const category = item.category ?? {}; const rawImages = Array.isArray(item.images) ? item.images : item.image ? [{ id: String(item.id) + "-image", url: item.image, alt: item.name }] : []; const images = rawImages.filter((image: BackendProduct) => typeof image.url === "string" && !image.url.startsWith("blob:")); return { id: String(item.id), slug: item.slug ?? toSlug(item.name), name: item.name, description: item.description ?? "", categorySlug: item.categorySlug ?? category.slug ?? category.id ?? String(item.categoryId ?? ""), images: images.length ? images.map((image: BackendProduct, index: number) => ({ id: String(image.id ?? index), url: image.url ?? image.publicUrl, alt: image.alt ?? item.name, storageKey: image.storageKey ?? image.key })) : [{ id: String(item.id) + "-placeholder", url: "/products/mock.png", alt: item.name }], inStock: item.inStock !== undefined ? Boolean(item.inStock) : item.availability === "IN_STOCK" || Number(item.stock ?? 0) > 0, specifications: item.variants ?? item.specifications }; }
-export async function getProducts(): Promise<Product[]> { const query = buildProductQuery(); const result = await apiRequest<BackendProduct[] | { data?: BackendProduct[]; items?: BackendProduct[] }>("/products" + (query.size ? "?" + query : "")); const items = Array.isArray(result) ? result : result.data ?? result.items ?? []; return items.map(mapProduct); }
-export async function getAdminProducts(): Promise<Product[]> { const query = buildProductQuery(); const result = await apiRequest<BackendProduct[] | { data?: BackendProduct[]; items?: BackendProduct[] }>("/admin/products" + (query.size ? "?" + query : "")); const items = Array.isArray(result) ? result : result.data ?? result.items ?? []; return items.map(mapProduct); }
-export async function getProductBySlug(slug: string): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/products/" + slug)); }
-export async function getProductsByCategory(slug: string): Promise<Product[]> { const result = await apiRequest<BackendProduct[] | { data?: BackendProduct[]; items?: BackendProduct[] }>("/categories/" + slug + "/products"); const items = Array.isArray(result) ? result : result.data ?? result.items ?? []; return items.map(mapProduct); }
-export async function getFeaturedProducts(): Promise<Product[]> { const result = await apiRequest<BackendProduct[] | { data?: BackendProduct[]; items?: BackendProduct[] }>("/products/featured"); const items = Array.isArray(result) ? result : result.data ?? result.items ?? []; return items.map(mapProduct); }
-export async function getNewArrivals(): Promise<Product[]> { const result = await apiRequest<BackendProduct[] | { data?: BackendProduct[]; items?: BackendProduct[] }>("/products/new-arrivals"); const items = Array.isArray(result) ? result : result.data ?? result.items ?? []; return items.map(mapProduct); }
-export async function getProductById(id: string): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/admin/products/" + id)); }
-function toBackendProduct(input: ProductInput) {
+export type ProductSort = "createdAt_desc" | "createdAt_asc" | "name_asc" | "name_desc";
+
+export interface ProductQuery {
+    page?: number;
+    limit?: number;
+    search?: string;
+    /** Category id or slug. */
+    categoryId?: string;
+    sort?: ProductSort;
+}
+
+export interface AdminProductQuery extends ProductQuery {
+    status?: ProductStatus;
+    featured?: boolean;
+}
+
+interface BackendProduct {
+    id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    status: ProductStatus;
+    featured: boolean;
+    stock: number;
+    inStock: boolean;
+    categorySlug: string;
+    categoryName: string;
+    images: Array<{ id: string; url: string; alt: string; key?: string }>;
+    variants: Array<{ id: string; name: string; stock: number; availability: boolean; attributes: unknown }>;
+    createdAt: string;
+}
+
+type BackendPage = { data: BackendProduct[]; meta: Paginated<Product>["meta"] };
+
+function toAttributes(value: unknown): Record<string, string> {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, String(entry)]));
+}
+
+export function mapProduct(item: BackendProduct): Product {
+    const images = item.images.filter((image) => !image.url.startsWith("blob:"));
     return {
-        name: input.name,
-        description: input.description,
-        categoryId: input.categorySlug,
-        images: input.images?.map((image, index) => ({
-            key: image.storageKey ?? image.url,
-            url: image.url,
-            alt: image.alt,
-            isPrimary: index === 0,
-            position: index,
+        id: item.id,
+        slug: item.slug,
+        name: item.name,
+        description: item.description ?? "",
+        categorySlug: item.categorySlug,
+        categoryName: item.categoryName,
+        images: images.length
+            ? images.map((image) => ({ id: image.id, url: image.url, alt: image.alt || item.name, storageKey: image.key }))
+            : [{ id: `${item.id}-placeholder`, url: PLACEHOLDER_IMAGE, alt: item.name }],
+        inStock: item.inStock,
+        stock: item.stock,
+        status: item.status,
+        featured: item.featured,
+        variants: item.variants.map((variant) => ({
+            id: variant.id,
+            name: variant.name,
+            stock: variant.stock,
+            availability: variant.availability,
+            attributes: toAttributes(variant.attributes),
         })),
-        stock: input.inStock ? 1 : 0,
-        status: "PUBLISHED",
+        createdAt: item.createdAt,
     };
 }
-export async function createProduct(input: ProductInput): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/admin/products", { method: "POST", body: JSON.stringify(toBackendProduct(input)) })); }
-export async function updateProduct(id: string, input: ProductInput): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/admin/products/" + id, { method: "PATCH", body: JSON.stringify(toBackendProduct(input)) })); }
-export async function deleteProduct(id: string): Promise<void> { await apiRequest<void>("/admin/products/" + id, { method: "DELETE" }); }
 
+function mapPage(page: BackendPage): Paginated<Product> {
+    return { data: page.data.map(mapProduct), meta: page.meta };
+}
+
+export async function getProducts(params: ProductQuery = {}) {
+    return mapPage(await apiRequest<BackendPage>(`/products${toQueryString({ ...params })}`));
+}
+
+export async function getFeaturedProducts(limit = 4) {
+    return mapPage(await apiRequest<BackendPage>(`/products/featured${toQueryString({ limit })}`)).data;
+}
+
+export async function getNewArrivals(limit = 4) {
+    return mapPage(await apiRequest<BackendPage>(`/products/new-arrivals${toQueryString({ limit })}`)).data;
+}
+
+export async function getRelatedProducts(slug: string, limit = 4) {
+    return mapPage(await apiRequest<BackendPage>(`/products/${encodeURIComponent(slug)}/related${toQueryString({ limit })}`)).data;
+}
+
+export async function getProductBySlug(slug: string) {
+    return mapProduct(await apiRequest<BackendProduct>(`/products/${encodeURIComponent(slug)}`));
+}
+
+export function getProductsByCategory(slug: string, params: ProductQuery = {}) {
+    return apiRequest<BackendPage>(`/categories/${encodeURIComponent(slug)}/products${toQueryString({ ...params })}`).then(mapPage);
+}
+
+export async function getAdminProducts(params: AdminProductQuery = {}) {
+    return mapPage(await apiRequest<BackendPage>(`/admin/products${toQueryString({ ...params })}`));
+}
+
+export async function getProductById(id: string) {
+    return mapProduct(await apiRequest<BackendProduct>(`/admin/products/${encodeURIComponent(id)}`));
+}
+
+/** Only fields that are present are sent, so a partial update never overwrites the rest. */
+function toBackendProduct(input: Partial<ProductInput>) {
+    return {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.slug ? { slug: input.slug } : {}),
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.categorySlug !== undefined ? { categoryId: input.categorySlug } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.featured !== undefined ? { featured: input.featured } : {}),
+        ...(input.stock !== undefined ? { stock: input.stock } : {}),
+        ...(input.images
+            ? {
+                  images: input.images.map((image, index) => ({
+                      key: image.storageKey ?? image.url,
+                      url: image.url,
+                      alt: image.alt,
+                      isPrimary: index === 0,
+                      position: index,
+                  })),
+              }
+            : {}),
+    };
+}
+
+export async function createProduct(input: ProductInput) {
+    return mapProduct(await apiRequest<BackendProduct>("/admin/products", { method: "POST", body: JSON.stringify(toBackendProduct(input)) }));
+}
+
+export async function updateProduct(id: string, input: Partial<ProductInput>) {
+    return mapProduct(await apiRequest<BackendProduct>(`/admin/products/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(toBackendProduct(input)) }));
+}
+
+export async function deleteProduct(id: string) {
+    await apiRequest<unknown>(`/admin/products/${encodeURIComponent(id)}`, { method: "DELETE" });
+}

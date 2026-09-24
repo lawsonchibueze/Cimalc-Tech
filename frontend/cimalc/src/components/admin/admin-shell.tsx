@@ -1,66 +1,83 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { BarChart3, Boxes, FileText, FolderTree, Menu, X } from "lucide-react";
+import { BarChart3, Boxes, FileText, FolderTree, Inbox, LogOut, Menu, Users, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/botton";
+import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { SiteLogo } from "@/components/layout/site-logo";
+import { getAdminStats } from "@/lib/api/dashboard";
+import { adminKeys } from "@/lib/queries/account";
+import { useSession, useSignOut } from "@/lib/auth/use-session";
 
-const navigation = [
+type NavItem = { href: string; label: string; icon: typeof BarChart3; badge?: "pendingQuotes" | "openContactMessages" };
+
+const navigation: NavItem[] = [
     { href: "/admin", label: "Dashboard", icon: BarChart3 },
     { href: "/admin/products", label: "Products", icon: Boxes },
     { href: "/admin/categories", label: "Categories", icon: FolderTree },
-    { href: "/admin/quotes", label: "Quotes", icon: FileText },
+    { href: "/admin/quotes", label: "Quotes", icon: FileText, badge: "pendingQuotes" },
+    { href: "/admin/messages", label: "Messages", icon: Inbox, badge: "openContactMessages" },
+    { href: "/admin/users", label: "Users", icon: Users },
 ];
+
+function initials(name: string | undefined) {
+    return (name ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "?";
+}
+
+function getBreadcrumbs(pathname: string) {
+    const section = navigation.find((item) => item.href !== "/admin" && pathname.startsWith(item.href));
+    return section ? [{ label: "Admin", href: "/admin" }, { label: section.label }] : [{ label: "Admin" }, { label: "Dashboard" }];
+}
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     const pathname = usePathname();
+    const { user } = useSession();
+    const signOut = useSignOut();
+    const stats = useQuery({ queryKey: adminKeys.stats, queryFn: getAdminStats, refetchInterval: 60_000 });
 
     return (
         <aside className="flex h-full w-72 flex-col border-r border-border bg-surface px-4 py-5">
             <Link href="/admin" className="mb-10 flex items-center gap-3 px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2">
-                <img src="/brand/cimalc-logo.png" alt="Cimalc Tech" className="h-12 w-32 object-contain object-left" />
+                <SiteLogo className="h-12 w-32" sizes="128px" />
                 <span className="sr-only">Admin workspace</span>
             </Link>
-            <Link href="/" className="mb-5 flex min-h-11 items-center rounded-sm px-3 text-sm font-medium text-muted transition-colors hover:bg-background hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">â† Back to storefront</Link>
+            <Link href="/" className="mb-5 flex min-h-11 items-center rounded-sm px-3 text-sm font-medium text-muted transition-colors hover:bg-background hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">&larr; Back to storefront</Link>
             <nav aria-label="Admin navigation" className="flex flex-col gap-1">
                 <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Workspace</p>
-                {navigation.map(({ href, label, icon: Icon }) => {
+                {navigation.map(({ href, label, icon: Icon, badge }) => {
                     const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
+                    const count = badge ? stats.data?.[badge] ?? 0 : 0;
                     return (
-                        <Link
-                            key={href}
-                            href={href}
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex min-h-11 items-center gap-3 rounded-sm px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
-                                active ? "bg-brand text-white" : "text-default hover:bg-background hover:text-brand",
-                            )}
-                        >
+                        <Link key={href} href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn("flex min-h-11 items-center gap-3 rounded-sm px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2", active ? "bg-brand text-white" : "text-default hover:bg-background hover:text-brand")}>
                             <Icon className="h-4 w-4" aria-hidden="true" />
-                            {label}
+                            <span className="flex-1">{label}</span>
+                            {count > 0 && <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", active ? "bg-white/20 text-white" : "bg-brand/10 text-brand")} aria-label={`${count} waiting`}>{count}</span>}
                         </Link>
                     );
                 })}
             </nav>
-            <div className="mt-auto flex items-center justify-between gap-3 rounded-md bg-background p-3"><div><p className="text-xs font-semibold text-default">Appearance</p><p className="mt-1 text-xs text-muted">Switch theme</p></div><ThemeToggle /></div>
+            <div className="mt-auto space-y-3">
+                <div className="flex items-center justify-between gap-3 rounded-md bg-background p-3"><div><p className="text-xs font-semibold text-default">Appearance</p><p className="mt-1 text-xs text-muted">Switch theme</p></div><ThemeToggle /></div>
+                <div className="flex items-center gap-3 rounded-md bg-background p-3">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/10 text-xs font-bold text-brand" aria-hidden="true">{initials(user?.name)}</div>
+                    <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-default">{user?.name}</p><p className="truncate text-xs text-muted">{user?.email}</p></div>
+                    <button type="button" aria-label="Sign out" onClick={() => signOut.mutate()} disabled={signOut.isPending} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"><LogOut className="h-4 w-4" aria-hidden="true" /></button>
+                </div>
+            </div>
         </aside>
     );
-}
-
-function getBreadcrumbs(pathname: string) {
-    if (pathname.startsWith("/admin/products")) return [{ label: "Admin", href: "/admin" }, { label: "Products" }];
-    if (pathname.startsWith("/admin/categories")) return [{ label: "Admin", href: "/admin" }, { label: "Categories" }];
-    return [{ label: "Admin" }, { label: "Dashboard" }];
 }
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const pathname = usePathname();
+    const { user } = useSession();
 
     return (
         <div className="min-h-screen bg-background">
@@ -74,10 +91,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                         <div className="hidden sm:block"><Breadcrumb items={getBreadcrumbs(pathname)} /></div>
                         <span className="text-sm font-semibold text-default sm:hidden">Cimalc Tech Admin</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <span className="hidden text-xs text-muted md:inline">Catalog workspace</span>
-                        <div className="grid h-9 w-9 place-items-center rounded-full bg-brand/10 text-xs font-bold text-brand" aria-label="Admin workspace avatar">CT</div>
-                    </div>
+                    <div className="grid h-9 w-9 place-items-center rounded-full bg-brand/10 text-xs font-bold text-brand" title={user?.name} aria-label={`Signed in as ${user?.name ?? "administrator"}`}>{initials(user?.name)}</div>
                 </header>
                 <main className="mx-auto max-w-[1600px] p-4 md:p-8">{children}</main>
             </div>
@@ -94,4 +108,3 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
     );
 }
-

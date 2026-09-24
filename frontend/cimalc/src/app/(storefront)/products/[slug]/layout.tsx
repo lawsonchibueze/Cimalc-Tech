@@ -1,15 +1,56 @@
 import type { Metadata } from "next";
-import { getProductBySlug } from "@/lib/api/products";
+import { loadProduct } from "@/lib/api/server";
+import { absoluteUrl, siteConfig } from "@/lib/config/site";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cimalc-tech.com";
+type Params = { params: Promise<{ slug: string }> };
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  try {
-    const product = await getProductBySlug(slug);
-    const image = product.images[0]?.url ?? "/brand/cimalc-logo.png";
-    return { title: product.name, description: product.description, alternates: { canonical: `${siteUrl}/products/${product.slug}` }, openGraph: { title: product.name, description: product.description, type: "website", images: [{ url: image, alt: product.name }] }, twitter: { card: "summary_large_image", title: product.name, description: product.description, images: [image] } };
-  } catch { return { title: "Product | Cimalc Tech", robots: { index: false, follow: false } }; }
+  const product = await loadProduct(slug);
+  if (!product) return { title: "Product not found", robots: { index: false, follow: false } };
+
+  const image = absoluteUrl(product.images[0]?.url ?? siteConfig.logo);
+  const description = product.description || `${product.name} from ${siteConfig.name}. Request a tailored quote.`;
+  return {
+    title: product.name,
+    description,
+    alternates: { canonical: absoluteUrl(`/products/${product.slug}`) },
+    openGraph: { title: product.name, description, type: "website", images: [{ url: image, alt: product.name }] },
+    twitter: { card: "summary_large_image", title: product.name, description, images: [image] },
+  };
 }
 
-export default async function ProductSlugLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) { const { slug } = await params; let schema: Record<string, unknown> | null = null; try { const product = await getProductBySlug(slug); schema = { "@context": "https://schema.org", "@type": "Product", name: product.name, description: product.description, image: product.images.map((image) => image.url), sku: product.id, brand: { "@type": "Brand", name: "Cimalc Tech" } }; } catch {} return <>{children}{schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />}</>; }
+export default async function ProductSlugLayout({ children, params }: { children: React.ReactNode } & Params) {
+  const { slug } = await params;
+  const product = await loadProduct(slug);
+
+  const schema = product
+    ? [
+        {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          description: product.description || undefined,
+          image: product.images.map((image) => absoluteUrl(image.url)),
+          sku: product.id,
+          category: product.categoryName,
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+            { "@type": "ListItem", position: 2, name: "Products", item: absoluteUrl("/products") },
+            { "@type": "ListItem", position: 3, name: product.name, item: absoluteUrl(`/products/${product.slug}`) },
+          ],
+        },
+      ]
+    : null;
+
+  return (
+    <>
+      {children}
+      {schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />}
+    </>
+  );
+}

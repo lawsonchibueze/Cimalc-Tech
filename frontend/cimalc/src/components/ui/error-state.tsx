@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-import { Button } from "./botton";
+import { Button } from "./button";
 
 
 interface ErrorStateProps {

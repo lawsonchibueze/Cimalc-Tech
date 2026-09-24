@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cimalc Tech storefront
 
-## Getting Started
+Next.js 16 storefront and admin area for Cimalc Tech. Customers browse the catalogue and request quotes. Staff manage products, categories, quotes, contact messages and users. It talks to the NestJS API in `../../api`.
 
-First, run the development server:
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # then adjust the values
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Start the API first, see `../../api/README.md`. Sign up on the site, then follow the "First administrator" steps in the API README to get access to `/admin`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | Public URL of the API |
+| `NEXT_PUBLIC_SITE_URL` | This site's public URL, used for canonical links, the sitemap and structured data |
+| `NEXT_PUBLIC_MEDIA_URL` | Same value as `R2_PUBLIC_URL` in the API. Needed so product photos can be optimised |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Optional. Shows an email button in the footer and on the contact page |
+| `AUTH_ENFORCE_PROTECTION` | Optional. Redirects signed out visitors early, needs a shared cookie domain |
 
-## Learn More
+`NEXT_PUBLIC_` values are baked in at build time, so rebuild after changing them.
 
-To learn more about Next.js, take a look at the following resources:
+## Where things live
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Path | What it holds |
+| --- | --- |
+| `src/lib/config/site.ts` | Business name, phone, address and navigation. Edit here, not in components |
+| `src/lib/config/upload.ts` | Image limits, mirrored from the API |
+| `src/lib/api/` | One module per API area. Errors are `ApiError` with the HTTP status |
+| `src/lib/auth/` | Auth client, the shared `useSession` hook and safe redirects |
+| `src/lib/content/faq.ts` | FAQ copy. Add delivery and return terms once there is a written policy |
+| `src/components/auth/require-auth.tsx` | Keeps the wrong people out of `/account` and `/admin` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Access control
 
-## Deploy on Vercel
+The interface hides admin screens from people without the admin role, but the API is what actually enforces it. Every admin route rejects requests without an administrator session, so hiding a page is never the only protection.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+For sign-in to work across two sites, both must share a registrable domain, for example `shop.example.com` and `api.example.com`. Set `COOKIE_DOMAIN=example.com` in the API. Browsers that block third party cookies otherwise drop the session cookie.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+```bash
+npm run dev        # development server
+npm run build      # production build
+npm run start      # serve the production build
+npm run lint       # ESLint
+npm run typecheck  # TypeScript
+```

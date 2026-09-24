@@ -9,6 +9,7 @@ const badgeVariants = cva(
                 success: "bg-success-bg text-success",
                 error: "bg-error-bg text-error",
                 warning: "bg-warning-bg text-warning",
+                info: "bg-brand/10 text-brand",
                 neutral: "bg-border/60 text-muted",
             },
         },

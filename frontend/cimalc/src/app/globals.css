@@ -7,13 +7,19 @@
   --color-accent: #234f9b;
   --color-payment: #f5a623; /* Reserved exclusively for payment-related UI. Never use for general actions. */
 
+  /* Hero banner */
+  --color-hero: #101d32;
+  --color-hero-accent: #4f7cff;
+  --color-hero-soft: #dce4f4;
+
   /* Surfaces */
   --color-background: #eef5fa;
   --color-surface: #ffffff;
   --color-border: #e5e7eb;
+  --color-footer: #dce8f1;
 
   /* Text */
-  --color-muted: #9ca3af;
+  --color-muted: #5b6673; /* Above 5:1 on white and on the page background, so it meets WCAG AA for body text */
   --color-default: #1f2933;
 
   /* Feedback */
@@ -38,6 +44,7 @@
   --color-background: #0d1728;
   --color-surface: #13233a;
   --color-border: #29415f;
+  --color-footer: #0f1d31;
   --color-default: #edf4ff;
   --color-muted: #9fb2ca;
   --color-success-bg: #123a2a;
@@ -51,14 +58,6 @@ body {
   font-family: Georgia, "Times New Roman", serif;
   min-width: 0;
   overflow-x: hidden;
-}
-
-footer {
-  background: #dce8f1 !important;
-}
-
-.dark footer {
-  background: #0f1d31 !important;
 }
 
 img,

@@ -3,7 +3,7 @@ import { FeaturedCategories } from "@/components/home/featured-categories";
 import { FeaturedProducts } from "@/components/home/featured-products";
 import { NewArrivals } from "@/components/home/new-arrivals";
 import { ValueProps } from "@/components/home/value-props";
-import { QuoteCta } from "@/components/home/qoute-cta";
+import { QuoteCta } from "@/components/home/quote-cta";
 
 
 export default function HomePage() {

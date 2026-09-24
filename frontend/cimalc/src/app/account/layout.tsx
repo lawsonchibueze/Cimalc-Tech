@@ -1,10 +1,26 @@
-﻿import Link from "next/link";
-import { UserRound, FileText, ReceiptText, ShoppingBag } from "lucide-react";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import Link from "next/link";
 import type { Metadata } from "next";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { RequireAuth } from "@/components/auth/require-auth";
+import { SiteLogo } from "@/components/layout/site-logo";
+import { AccountNav } from "@/components/account/account-nav";
 
-export const metadata: Metadata = { title: "My account | Cimalc Tech", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "My account", robots: { index: false, follow: false } };
 
-const links = [{ href: "/account", label: "Overview", icon: UserRound }, { href: "/account/quotes", label: "My quotes", icon: FileText }, { href: "/account/orders", label: "Orders", icon: ShoppingBag }, { href: "/account/invoices", label: "Invoices", icon: ReceiptText }, { href: "/account/profile", label: "Profile", icon: UserRound }];
-export default function AccountLayout({ children }: { children: React.ReactNode }) { return <div className="mx-auto max-w-[1440px] px-4 py-6 sm:py-8 md:px-8"><div className="mb-6 flex items-center justify-between gap-4"><Link href="/" aria-label="Cimalc Tech home" className="rounded-lg bg-white p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"><img src="/brand/cimalc-logo.png" alt="Cimalc Tech" className="h-12 w-32 object-contain" /></Link><Link href="/" className="text-sm font-medium text-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">Back to store</Link></div><Breadcrumb items={[{ label: "Home", href: "/" }, { label: "My account" }]} /><div className="mt-6 grid gap-6 lg:mt-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"><aside className="rounded-md border border-border bg-surface p-3"><p className="px-3 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Account</p><nav className="grid grid-cols-2 gap-1 sm:flex sm:overflow-x-auto lg:flex-col">{links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex min-h-11 min-w-0 items-center gap-2 rounded-sm px-3 text-sm font-medium text-default transition-colors hover:bg-background hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"><Icon className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="truncate">{label}</span></Link>)}</nav></aside><main className="min-w-0">{children}</main></div></div>; }
-
+export default function AccountLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireAuth>
+      <div className="mx-auto max-w-[1440px] px-4 py-6 sm:py-8 md:px-8">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Link href="/" aria-label="Cimalc Tech home" className="rounded-lg bg-white p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"><SiteLogo className="h-12 w-32" sizes="128px" eager /></Link>
+          <Link href="/" className="text-sm font-medium text-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">Back to store</Link>
+        </div>
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "My account" }]} />
+        <div className="mt-6 grid gap-6 lg:mt-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+          <AccountNav />
+          <main className="min-w-0">{children}</main>
+        </div>
+      </div>
+    </RequireAuth>
+  );
+}

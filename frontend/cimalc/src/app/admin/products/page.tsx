@@ -1,32 +1,7 @@
-﻿"use client";
-
-import Link from "next/link";
-import { motion } from "motion/react";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Trash2, ArrowUpDown } from "lucide-react";
-import { toast } from "sonner";
-import { getCategories } from "@/lib/api/categories";
-import { deleteProduct, getAdminProducts } from "@/lib/api/products";
-import { categoryKeys } from "@/lib/queries/categories";
-import { productKeys } from "@/lib/queries/products";
-import type { Product } from "@/types/product";
-import { Button } from "@/components/ui/botton";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Dialog } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/ui/empty-state";
-import { ErrorState } from "@/components/ui/error-state";
-import { Input } from "@/components/ui/input";
-import { Pagination } from "@/components/ui/pagination";
+import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AdminProductsList } from "./products-list";
 
 export default function AdminProductsPage() {
-    const [search, setSearch] = useState(""); const [category, setCategory] = useState("all"); const [sortAsc, setSortAsc] = useState(true); const [page, setPage] = useState(1); const [productToDelete, setProductToDelete] = useState<Product | null>(null); const queryClient = useQueryClient();
-    const products = useQuery({ queryKey: productKeys.adminList(), queryFn: getAdminProducts }); const categories = useQuery({ queryKey: categoryKeys.lists(), queryFn: getCategories });
-    const remove = useMutation({ mutationFn: deleteProduct, onSuccess: () => { void queryClient.invalidateQueries({ queryKey: productKeys.all }); toast.success("Product deleted"); setProductToDelete(null); }, onError: () => toast.error("Could not delete product") });
-    const filtered = useMemo(() => { const result = (products.data ?? []).filter((item) => item.name.toLowerCase().includes(search.toLowerCase()) && (category === "all" || item.categorySlug === category)); return result.sort((a, b) => sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)); }, [products.data, search, category, sortAsc]);
-    const pageSize = 6; const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize)); const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
-    return <><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6"><div className="flex flex-col justify-between gap-4 md:flex-row md:items-end"><div><p className="text-sm font-medium text-brand">Catalog</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Products</h1><p className="mt-2 text-sm text-muted">Search, review, and curate the products customers see.</p></div><Button href="/admin/products/new"><Plus className="h-4 w-4" aria-hidden="true" /> Add product</Button></div><Card><CardContent className="space-y-5 p-4 md:p-6"><div className="flex flex-col gap-3 md:flex-row"><div className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted" aria-hidden="true" /><Input aria-label="Search products" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search by product name..." className="pl-9" /></div><select aria-label="Filter by category" value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} className="h-11 rounded-sm border border-border bg-surface px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"><option value="all">All categories</option>{categories.data?.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></div>{products.isLoading ? <div className="space-y-3">{[1,2,3,4].map((item) => <Skeleton key={item} className="h-16 w-full" />)}</div> : products.isError ? <ErrorState onRetry={() => void products.refetch()} /> : filtered.length === 0 ? <EmptyState title="No products found" description="Try a different search or add your first product." actionLabel="Add product" actionHref="/admin/products/new" /> : <><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead><tr className="border-b border-border text-xs uppercase tracking-wide text-muted"><th className="px-3 py-3 font-semibold">Image</th><th className="px-3 py-3 font-semibold"><button className="inline-flex min-h-11 items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" onClick={() => setSortAsc((value) => !value)}>Name <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" /></button></th><th className="px-3 py-3 font-semibold">Category</th><th className="px-3 py-3 font-semibold">Stock status</th><th className="px-3 py-3" /></tr></thead><tbody>{visible.map((product, index) => <motion.tr key={product.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * .04 }} className="border-b border-border/70 last:border-0 hover:bg-background"><td className="px-3 py-4"><img src={product.images[0]?.url ?? "/products/mock.png"} alt={product.images[0]?.alt ?? product.name} className="h-12 w-12 rounded-sm object-cover" /></td><td className="px-3 py-4"><Link className="font-medium text-default hover:text-brand" href={`/admin/products/${product.id}`}>{product.name}</Link></td><td className="px-3 py-4">{categories.data?.find((item) => item.slug === product.categorySlug)?.name ?? product.categorySlug}</td><td className="px-3 py-4"><Badge variant={product.inStock ? "success" : "warning"}>{product.inStock ? "In stock" : "Out of stock"}</Badge></td><td className="px-3 py-4"><div className="flex justify-end gap-1"><Button href={`/admin/products/${product.id}/edit`} variant="ghost" size="sm">Edit</Button><Button variant="ghost" size="sm" className="h-11 w-11 p-0 text-error" aria-label={`Delete ${product.name}`} onClick={() => setProductToDelete(product)}><Trash2 className="h-4 w-4" aria-hidden="true" /></Button></div></td></motion.tr>)}</tbody></table></div><Pagination currentPage={Math.min(page, totalPages)} totalPages={totalPages} onPageChange={setPage} /></>}</CardContent></Card></motion.div><Dialog isOpen={Boolean(productToDelete)} onClose={() => setProductToDelete(null)} title="Delete product"><div className="space-y-5"><p className="text-sm leading-6 text-muted">This will remove <span className="font-semibold text-default">{productToDelete?.name}</span> from the catalog. This action cannot be undone.</p><div className="flex justify-end gap-3"><Button variant="ghost" onClick={() => setProductToDelete(null)}>Cancel</Button><Button variant="destructive" isLoading={remove.isPending} onClick={() => productToDelete && remove.mutate(productToDelete.id)}>Delete product</Button></div></div></Dialog></>;
+    return <Suspense fallback={<Skeleton className="h-96 w-full" />}><AdminProductsList /></Suspense>;
 }
-

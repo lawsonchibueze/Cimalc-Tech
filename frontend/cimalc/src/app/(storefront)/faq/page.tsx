@@ -1,21 +1,32 @@
-const faqs = [
-    { question: "How long does delivery take?", answer: "Most orders arrive within 2-3 business days within major cities." },
-    { question: "How do I request a bulk quote?", answer: "Use the 'Request a Quote' button on any product page, or contact us directly." },
-    { question: "What is your return policy?", answer: "We offer easy 7-day returns on all unused, unopened products." },
-];
+import type { Metadata } from "next";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { faqs } from "@/lib/content/faq";
+
+export const metadata: Metadata = {
+    title: "FAQ",
+    description: "Answers to common questions about requesting quotes from Cimalc Tech.",
+};
+
+const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({ "@type": "Question", name: faq.question, acceptedAnswer: { "@type": "Answer", text: faq.answer } })),
+};
 
 export default function FaqPage() {
     return (
         <div className="mx-auto max-w-2xl px-4 py-16 md:px-8">
-            <h1 className="text-2xl font-bold text-default">Frequently Asked Questions</h1>
+            <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "FAQ" }]} />
+            <h1 className="mt-6 text-2xl font-bold text-default">Frequently Asked Questions</h1>
             <div className="mt-8 flex flex-col divide-y divide-border">
                 {faqs.map((faq) => (
                     <div key={faq.question} className="py-5">
-                        <p className="font-semibold text-default">{faq.question}</p>
-                        <p className="mt-2 text-sm text-muted">{faq.answer}</p>
+                        <h2 className="font-semibold text-default">{faq.question}</h2>
+                        <p className="mt-2 text-sm leading-6 text-muted">{faq.answer}</p>
                     </div>
                 ))}
             </div>
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
         </div>
     );
 }

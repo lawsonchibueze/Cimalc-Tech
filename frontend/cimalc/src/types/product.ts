@@ -1,3 +1,5 @@
+export type ProductStatus = "DRAFT" | "PUBLISHED";
+
 export interface ProductImage {
     id: string;
     url: string;
@@ -5,9 +7,12 @@ export interface ProductImage {
     storageKey?: string;
 }
 
-export interface ProductSpecification {
-    label: string;
-    value: string;
+export interface ProductVariant {
+    id: string;
+    name: string;
+    stock: number;
+    availability: boolean;
+    attributes: Record<string, string>;
 }
 
 export interface Product {
@@ -16,8 +21,12 @@ export interface Product {
     name: string;
     description: string;
     categorySlug: string;
+    categoryName: string;
     images: ProductImage[];
     inStock: boolean;
-    specifications?: ProductSpecification[];
+    stock: number;
+    status: ProductStatus;
+    featured: boolean;
+    variants: ProductVariant[];
+    createdAt: string;
 }
-
