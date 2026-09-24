@@ -61,6 +61,7 @@ export const ModelName = {
   Verification: 'Verification',
   Quote: 'Quote',
   QuoteItem: 'QuoteItem',
+  ContactMessage: 'ContactMessage',
   QuoteMessage: 'QuoteMessage'
 } as const
 
@@ -225,11 +226,24 @@ export const QuoteItemScalarFieldEnum = {
 export type QuoteItemScalarFieldEnum = (typeof QuoteItemScalarFieldEnum)[keyof typeof QuoteItemScalarFieldEnum]
 
 
+export const ContactMessageScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  message: 'message',
+  handledAt: 'handledAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ContactMessageScalarFieldEnum = (typeof ContactMessageScalarFieldEnum)[keyof typeof ContactMessageScalarFieldEnum]
+
+
 export const QuoteMessageScalarFieldEnum = {
   id: 'id',
   quoteId: 'quoteId',
   userId: 'userId',
   body: 'body',
+  fromStaff: 'fromStaff',
   createdAt: 'createdAt'
 } as const
 

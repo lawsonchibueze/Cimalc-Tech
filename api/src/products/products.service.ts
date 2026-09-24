@@ -1,9 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, ProductStatus } from "../generated/prisma/client.js";
+import { pageArgs, pageMeta } from "../common/pagination.js";
+import { isForeignKeyViolation, isUniqueViolation } from "../common/prisma-errors.js";
+import { makeSlug, uniqueSlug } from "../common/slug.js";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { ProductsQueryDto } from "./dto/products-query.dto.js";
-import { CreateProductDto } from "./dto/create-product.dto.js";
+import { UploadsService } from "../uploads/uploads.service.js";
+import { AdminProductsQueryDto, type ProductListQuery, type ProductSort } from "./dto/products-query.dto.js";
+import { CreateProductDto, MAX_PRODUCT_IMAGES } from "./dto/create-product.dto.js";
 import { UpdateProductDto } from "./dto/update-product.dto.js";
+import type { ProductImageDto } from "./dto/product-image.dto.js";
 
 const include = {
   category: true,
@@ -11,149 +16,169 @@ const include = {
   variants: { orderBy: { name: "asc" } },
 } as const;
 
-type PublicProduct = Prisma.ProductGetPayload<{ include: typeof include }>;
+type ProductWithRelations = Prisma.ProductGetPayload<{ include: typeof include }>;
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploads: UploadsService,
+  ) {}
 
-  async findPublished(query: ProductsQueryDto, extraWhere: Prisma.ProductWhereInput = {}) {
-    const where: Prisma.ProductWhereInput = {
-      ...extraWhere,
-      ...(query.categoryId && {
-        category: {
-          OR: [{ id: query.categoryId }, { slug: query.categoryId }],
-        },
-      }),
-      ...(query.search && {
-        OR: [
-          { name: { contains: query.search, mode: "insensitive" } },
-          { description: { contains: query.search, mode: "insensitive" } },
-        ],
-      }),
-    };
-
-    const [products, total] = await Promise.all([
-      this.prisma.product.findMany({
-        where,
-        include,
-        orderBy: this.sort(query.sort),
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
-      }),
-      this.prisma.product.count({ where }),
-    ]);
-
-    return {
-      data: products.map((product) => this.publicProduct(product)),
-      meta: {
-        page: query.page,
-        limit: query.limit,
-        total,
-        totalPages: Math.ceil(total / query.limit),
-      },
-    };
+  /** Public catalogue. Only published products are ever returned. */
+  async findPublished(query: ProductListQuery, extraWhere: Prisma.ProductWhereInput = {}) {
+    return this.list(query, { AND: [{ status: ProductStatus.PUBLISHED }, extraWhere] });
   }
 
-  async findPublishedById(id: string) {
+  async findPublishedBySlug(slug: string) {
     const product = await this.prisma.product.findFirst({
-      where: { slug: id },
+      where: { slug, status: ProductStatus.PUBLISHED },
       include,
     });
 
     if (!product) throw new NotFoundException("Product not found");
-    return this.publicProduct(product);
+    return this.present(product);
   }
 
-  async findNewArrivals(query: ProductsQueryDto) {
+  findNewArrivals(query: ProductListQuery) {
     return this.findPublished({ ...query, sort: "createdAt_desc" });
   }
 
-  async findFeatured(query: ProductsQueryDto) {
+  findFeatured(query: ProductListQuery) {
     return this.findPublished(query, { featured: true });
   }
 
-  async findRelated(id: string, query: ProductsQueryDto) {
+  async findRelated(slug: string, query: ProductListQuery) {
     const product = await this.prisma.product.findFirst({
-      where: { slug: id },
-      select: { categoryId: true },
+      where: { slug, status: ProductStatus.PUBLISHED },
+      select: { id: true, categoryId: true },
     });
     if (!product) throw new NotFoundException("Product not found");
-    return this.findPublished({ ...query, categoryId: product.categoryId });
+    return this.findPublished({ ...query, categoryId: undefined }, { categoryId: product.categoryId, id: { not: product.id } });
   }
 
-  findAdmin(query: ProductsQueryDto) {
-    const where: Prisma.ProductWhereInput = {
-      ...(query.categoryId && {
-        category: { OR: [{ id: query.categoryId }, { slug: query.categoryId }] },
-      }),
-      ...(query.search && {
-        OR: [
-          { name: { contains: query.search, mode: "insensitive" } },
-          { description: { contains: query.search, mode: "insensitive" } },
-        ],
-      }),
-    };
-    return this.prisma.product.findMany({
-      where,
-      include,
-      orderBy: this.sort(query.sort),
-      skip: (query.page - 1) * query.limit,
-      take: query.limit,
+  /** Admin catalogue. Includes drafts and can filter by status. */
+  findAdmin(query: AdminProductsQueryDto) {
+    return this.list(query, {
+      AND: [
+        query.status ? { status: query.status } : {},
+        query.featured !== undefined ? { featured: query.featured } : {},
+      ],
     });
   }
 
   async findAdminById(id: string) {
     const product = await this.prisma.product.findUnique({ where: { id }, include });
     if (!product) throw new NotFoundException("Product not found");
-    return product;
+    return this.present(product);
   }
 
   async create(dto: CreateProductDto) {
     const category = await this.ensureCategory(dto.categoryId);
-    const images = this.validateImages(dto.images);
-    const { images: _images, ...productData } = dto;
-    return this.prisma.product.create({
-      data: {
-        ...productData,
-        categoryId: category.id,
-        slug: dto.slug || this.makeSlug(dto.name),
-        images: { create: images },
-      },
-      include,
-    });
-  }
+    const images = this.normalizeImages(dto.images);
+    const slug = await this.resolveSlug(dto.slug, dto.name);
 
-  async update(id: string, dto: UpdateProductDto) {
-    await this.findById(id);
-    const category = dto.categoryId ? await this.ensureCategory(dto.categoryId) : undefined;
-    const images = dto.images ? this.validateImages(dto.images) : undefined;
-    const { images: _images, ...productData } = dto;
-    return this.prisma.$transaction(async (tx) => {
-      if (images) await tx.productImage.deleteMany({ where: { productId: id } });
-      return tx.product.update({
-        where: { id },
+    try {
+      const product = await this.prisma.product.create({
         data: {
-          ...productData,
-          ...(category ? { categoryId: category.id } : {}),
-          ...(dto.name && !dto.slug ? { slug: this.makeSlug(dto.name) } : {}),
-          ...(images ? { images: { create: images } } : {}),
+          name: dto.name.trim(),
+          slug,
+          description: dto.description?.trim() || null,
+          stock: dto.stock ?? 0,
+          status: dto.status ?? ProductStatus.DRAFT,
+          featured: dto.featured ?? false,
+          categoryId: category.id,
+          images: { create: images },
         },
         include,
       });
-    });
+      return this.present(product);
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new ConflictException("A product with this URL slug already exists");
+      throw error;
+    }
+  }
+
+  async update(id: string, dto: UpdateProductDto) {
+    const existing = await this.prisma.product.findUnique({ where: { id }, include: { images: true } });
+    if (!existing) throw new NotFoundException("Product not found");
+
+    const category = dto.categoryId ? await this.ensureCategory(dto.categoryId) : undefined;
+    const images = dto.images ? this.normalizeImages(dto.images) : undefined;
+    const slug = dto.slug && dto.slug !== existing.slug ? await this.resolveSlug(dto.slug, dto.name ?? existing.name, id) : undefined;
+
+    try {
+      const product = await this.prisma.$transaction(async (tx) => {
+        if (images) await tx.productImage.deleteMany({ where: { productId: id } });
+        return tx.product.update({
+          where: { id },
+          data: {
+            ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+            ...(dto.description !== undefined ? { description: dto.description.trim() || null } : {}),
+            ...(dto.stock !== undefined ? { stock: dto.stock } : {}),
+            ...(dto.status !== undefined ? { status: dto.status } : {}),
+            ...(dto.featured !== undefined ? { featured: dto.featured } : {}),
+            ...(category ? { categoryId: category.id } : {}),
+            ...(slug ? { slug } : {}),
+            ...(images ? { images: { create: images } } : {}),
+          },
+          include,
+        });
+      });
+
+      if (images) {
+        const keptKeys = new Set(images.map((image) => image.key));
+        await this.uploads.deleteObjects(existing.images.map((image) => image.key).filter((key) => !keptKeys.has(key)));
+      }
+      return this.present(product);
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new ConflictException("A product with this URL slug already exists");
+      throw error;
+    }
   }
 
   async remove(id: string) {
-    await this.findById(id);
-    await this.prisma.product.delete({ where: { id } });
+    const existing = await this.prisma.product.findUnique({ where: { id }, include: { images: true } });
+    if (!existing) throw new NotFoundException("Product not found");
+
+    try {
+      await this.prisma.product.delete({ where: { id } });
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ConflictException("This product is part of quote requests and cannot be deleted. Set it to draft to hide it instead.");
+      }
+      throw error;
+    }
+
+    await this.uploads.deleteObjects(existing.images.map((image) => image.key));
     return { message: "Product deleted" };
   }
 
-  private async findById(id: string) {
-    const product = await this.prisma.product.findUnique({ where: { id } });
-    if (!product) throw new NotFoundException("Product not found");
-    return product;
+  private async list(query: ProductListQuery, base: Prisma.ProductWhereInput) {
+    const where: Prisma.ProductWhereInput = {
+      AND: [
+        base,
+        query.categoryId ? { category: { OR: [{ id: query.categoryId }, { slug: query.categoryId }] } } : {},
+        query.search
+          ? {
+              OR: [
+                { name: { contains: query.search, mode: "insensitive" } },
+                { description: { contains: query.search, mode: "insensitive" } },
+              ],
+            }
+          : {},
+      ],
+    };
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({ where, include, orderBy: this.sort(query.sort), ...pageArgs(query) }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return {
+      data: products.map((product) => this.present(product)),
+      meta: pageMeta(query.page, query.limit, total),
+    };
   }
 
   private async ensureCategory(categoryId: string) {
@@ -164,34 +189,44 @@ export class ProductsService {
     return category;
   }
 
-  private makeSlug(value: string) {
-    return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  private async resolveSlug(explicit: string | undefined, name: string, excludeId?: string) {
+    const isTaken = async (slug: string) =>
+      (await this.prisma.product.count({ where: { slug, ...(excludeId ? { id: { not: excludeId } } : {}) } })) > 0;
+
+    if (explicit) {
+      if (await isTaken(explicit)) throw new ConflictException("That URL slug is already used by another product");
+      return explicit;
+    }
+    return uniqueSlug(makeSlug(name, "product"), isTaken);
   }
 
-  private validateImages(images: CreateProductDto["images"] | UpdateProductDto["images"]) {
-    if (!images?.length || images.length > 5) {
-      throw new BadRequestException("A product must have between 1 and 5 images");
+  /** Orders the gallery, makes exactly one image primary and puts it first. */
+  private normalizeImages(images: ProductImageDto[]) {
+    if (!images.length || images.length > MAX_PRODUCT_IMAGES) {
+      throw new BadRequestException(`A product must have between 1 and ${MAX_PRODUCT_IMAGES} images`);
     }
-    if (images.filter((image) => image.isPrimary).length !== 1) {
-      images[0].isPrimary = true;
-      for (const [index, image] of images.entries()) image.isPrimary = index === 0;
-    }
-    return images.map((image, index) => ({
+    const ordered = images
+      .map((image, index) => ({ image, index }))
+      .sort((a, b) => (a.image.position ?? a.index) - (b.image.position ?? b.index) || a.index - b.index)
+      .map(({ image }) => image);
+    const primaryIndex = Math.max(0, ordered.findIndex((image) => image.isPrimary));
+    const [primary] = ordered.splice(primaryIndex, 1);
+    return [primary, ...ordered].map((image, index) => ({
       key: image.key || image.url,
       url: image.url,
-      alt: image.alt || "Product image",
-      isPrimary: image.isPrimary ?? index === 0,
-      position: image.position ?? index,
+      alt: image.alt?.trim() || "Product image",
+      isPrimary: index === 0,
+      position: index,
     }));
   }
 
-  private sort(sort: ProductsQueryDto["sort"]): Prisma.ProductOrderByWithRelationInput {
-    if (sort === "name_asc") return { name: "asc" };
-    if (sort === "name_desc") return { name: "desc" };
-    return { createdAt: sort === "createdAt_asc" ? "asc" : "desc" };
+  private sort(sort: ProductSort): Prisma.ProductOrderByWithRelationInput[] {
+    if (sort === "name_asc") return [{ name: "asc" }, { id: "asc" }];
+    if (sort === "name_desc") return [{ name: "desc" }, { id: "asc" }];
+    return [{ createdAt: sort === "createdAt_asc" ? "asc" : "desc" }, { id: "asc" }];
   }
 
-  private publicProduct(product: PublicProduct) {
+  private present(product: ProductWithRelations) {
     const variants = product.variants.map((variant) => ({
       ...variant,
       availability: variant.stock > 0,
@@ -205,9 +240,12 @@ export class ProductsService {
       slug: product.slug,
       name: product.name,
       description: product.description,
-      image: product.image,
+      image: product.images[0]?.url ?? product.image ?? null,
+      status: product.status,
+      featured: product.featured,
       categoryId: product.categoryId,
       categorySlug: product.category.slug,
+      categoryName: product.category.name,
       stock,
       inStock: stock > 0,
       availability: stock > 0,

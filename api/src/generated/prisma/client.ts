@@ -92,6 +92,11 @@ export type Quote = Prisma.QuoteModel
  */
 export type QuoteItem = Prisma.QuoteItemModel
 /**
+ * Model ContactMessage
+ * 
+ */
+export type ContactMessage = Prisma.ContactMessageModel
+/**
  * Model QuoteMessage
  * 
  */

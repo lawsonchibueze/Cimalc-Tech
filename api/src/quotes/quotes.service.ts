@@ -1,55 +1,104 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { QuoteStatus } from "../generated/prisma/client.js";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { randomBytes } from "node:crypto";
+import { Prisma, ProductStatus, QuoteStatus } from "../generated/prisma/client.js";
+import { getAllowedOrigins } from "../common/origins.js";
+import { pageArgs, pageMeta } from "../common/pagination.js";
+import { isUniqueViolation } from "../common/prisma-errors.js";
+import { MailService } from "../mail/mail.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { AdminQuotesQueryDto } from "./dto/admin-quotes-query.dto.js";
 import { CreateQuoteDto } from "./dto/create-quote.dto.js";
 import { CreateQuoteMessageDto } from "./dto/create-quote-message.dto.js";
 import { UpdateQuoteStatusDto } from "./dto/update-quote-status.dto.js";
 
 const include = {
-  items: { include: { product: true } },
-  messages: { orderBy: { createdAt: "asc" as const } },
-} as const;
+  items: {
+    include: {
+      product: {
+        select: { id: true, slug: true, name: true, images: { orderBy: { position: "asc" }, take: 1, select: { url: true } } },
+      },
+    },
+  },
+  messages: { orderBy: { createdAt: "asc" } },
+} satisfies Prisma.QuoteInclude;
+
+type QuoteWithRelations = Prisma.QuoteGetPayload<{ include: typeof include }>;
+
+/** The parts of a signed in user this service needs. */
+export type Viewer = { id: string; email: string; emailVerified: boolean };
+
+const CANCELLABLE: QuoteStatus[] = [QuoteStatus.PENDING, QuoteStatus.REVIEWING];
+const CLOSED: QuoteStatus[] = [QuoteStatus.CANCELLED, QuoteStatus.EXPIRED];
+
+const STATUS_LABELS: Record<QuoteStatus, string> = {
+  PENDING: "received",
+  REVIEWING: "being reviewed",
+  QUOTED: "answered with a quote",
+  ACCEPTED: "accepted",
+  DECLINED: "declined",
+  CANCELLED: "cancelled",
+  EXPIRED: "expired",
+};
 
 @Injectable()
 export class QuotesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
-  async create(dto: CreateQuoteDto, userId?: string) {
+  async create(dto: CreateQuoteDto, viewer?: Viewer) {
     const product = await this.prisma.product.findFirst({
-      where: { id: dto.productId },
+      where: { id: dto.productId, status: ProductStatus.PUBLISHED },
+      select: { id: true, name: true },
     });
     if (!product) throw new NotFoundException("Product not found");
 
-    const quote = await this.prisma.quote.create({
-      data: {
-        reference: `Q-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 10000)}`,
-        customerName: dto.customerName,
-        email: dto.email,
-        phone: dto.phone,
-        message: dto.message,
-        userId,
-        items: { create: { productId: dto.productId, quantity: dto.quantity } },
-      },
-      include,
+    const quote = await this.createWithReference({
+      customerName: dto.customerName.trim(),
+      email: dto.email.trim(),
+      phone: dto.phone?.trim() || null,
+      message: dto.message?.trim() || null,
+      userId: viewer?.id ?? null,
+      items: { create: { productId: product.id, quantity: dto.quantity } },
     });
+
+    void this.mail.send({
+      to: quote.email,
+      subject: `We received your quote request ${quote.reference}`,
+      text: `Hello ${quote.customerName},\n\nThanks for asking about ${product.name} (quantity ${dto.quantity}). Our team will review your request and reply with a quote.\n\nYour reference is ${quote.reference}.`,
+    });
+    if (this.mail.staffAddress) {
+      void this.mail.send({
+        to: this.mail.staffAddress,
+        replyTo: quote.email,
+        subject: `New quote request ${quote.reference}`,
+        text: `${quote.customerName} <${quote.email}> asked for ${dto.quantity} x ${product.name}.\n\n${quote.message ?? "No message."}\n\n${this.adminLink(quote.id)}`,
+      });
+    }
+
     return this.present(quote);
   }
 
-  async findMine(userId: string) {
-    const quotes = await this.prisma.quote.findMany({ where: { userId }, include, orderBy: { createdAt: "desc" } });
+  async findMine(viewer: Viewer) {
+    const quotes = await this.prisma.quote.findMany({
+      where: this.ownedBy(viewer),
+      include,
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    });
     return quotes.map((quote) => this.present(quote));
   }
 
-  async findMineById(userId: string, id: string) {
-    const quote = await this.prisma.quote.findFirst({ where: { id, userId }, include });
+  async findMineById(viewer: Viewer, id: string) {
+    const quote = await this.prisma.quote.findFirst({ where: { id, ...this.ownedBy(viewer) }, include });
     if (!quote) throw new NotFoundException("Quote not found");
     return this.present(quote);
   }
 
-  async cancel(userId: string, id: string) {
-    const quote = await this.findMineById(userId, id);
-    if (![QuoteStatus.PENDING, QuoteStatus.REVIEWING].includes(quote.status)) {
-      return quote;
+  async cancel(viewer: Viewer, id: string) {
+    const quote = await this.findMineById(viewer, id);
+    if (!CANCELLABLE.includes(quote.status)) {
+      throw new ConflictException("This quote can no longer be cancelled. Send us a message instead.");
     }
     const updated = await this.prisma.quote.update({
       where: { id },
@@ -59,17 +108,46 @@ export class QuotesService {
     return this.present(updated);
   }
 
-  async addMessage(userId: string | undefined, id: string, dto: CreateQuoteMessageDto) {
-    const quote = userId
-      ? await this.findMineById(userId, id)
-      : await this.findPublicById(id);
-    await this.prisma.quoteMessage.create({ data: { quoteId: quote.id, userId, body: dto.body } });
-    return this.findPublicById(id);
+  async addMessage(viewer: Viewer, id: string, dto: CreateQuoteMessageDto) {
+    const quote = await this.findMineById(viewer, id);
+    if (CLOSED.includes(quote.status)) {
+      throw new ConflictException("This quote is closed. Start a new request to continue.");
+    }
+    await this.prisma.quoteMessage.create({ data: { quoteId: id, userId: viewer.id, body: dto.body.trim(), fromStaff: false } });
+
+    if (this.mail.staffAddress) {
+      void this.mail.send({
+        to: this.mail.staffAddress,
+        replyTo: quote.customer.email,
+        subject: `New message on quote ${quote.reference}`,
+        text: `${quote.customer.name} wrote:\n\n${dto.body}\n\n${this.adminLink(id)}`,
+      });
+    }
+    return this.findMineById(viewer, id);
   }
 
-  async findAdmin() {
-    const quotes = await this.prisma.quote.findMany({ include, orderBy: { createdAt: "desc" } });
-    return quotes.map((quote) => this.present(quote));
+  async findAdmin(query: AdminQuotesQueryDto) {
+    const where: Prisma.QuoteWhereInput = {
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              { reference: { contains: query.search, mode: "insensitive" } },
+              { customerName: { contains: query.search, mode: "insensitive" } },
+              { email: { contains: query.search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
+
+    const [quotes, total, grouped] = await Promise.all([
+      this.prisma.quote.findMany({ where, include, orderBy: [{ createdAt: "desc" }, { id: "asc" }], ...pageArgs(query) }),
+      this.prisma.quote.count({ where }),
+      this.prisma.quote.groupBy({ by: ["status"], _count: { _all: true } }),
+    ]);
+
+    const counts = Object.fromEntries(grouped.map((group) => [group.status, group._count._all]));
+    return { data: quotes.map((quote) => this.present(quote)), meta: { ...pageMeta(query.page, query.limit, total), counts } };
   }
 
   async findAdminById(id: string) {
@@ -79,35 +157,109 @@ export class QuotesService {
   }
 
   async updateStatus(id: string, dto: UpdateQuoteStatusDto) {
-    await this.findAdminById(id);
-    const updated = await this.prisma.quote.update({ where: { id }, data: { status: dto.status }, include });
+    const existing = await this.findAdminById(id);
+    if (existing.status === QuoteStatus.CANCELLED && dto.status !== QuoteStatus.CANCELLED) {
+      throw new ConflictException("The customer cancelled this quote, so its status can no longer change.");
+    }
+    if (existing.status === dto.status) return existing;
+
+    const updated = await this.prisma.quote.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        cancelledAt: dto.status === QuoteStatus.CANCELLED ? new Date() : null,
+      },
+      include,
+    });
+
+    if (dto.status !== QuoteStatus.PENDING && dto.status !== QuoteStatus.CANCELLED) {
+      void this.mail.send({
+        to: updated.email,
+        subject: `Your quote request ${updated.reference} is ${STATUS_LABELS[dto.status]}`,
+        text: `Hello ${updated.customerName},\n\nYour quote request ${updated.reference} is now ${STATUS_LABELS[dto.status]}.\n\nReply to this email or contact our team if you have questions.`,
+      });
+    }
     return this.present(updated);
   }
 
-  async addAdminMessage(id: string, dto: CreateQuoteMessageDto) {
-    await this.findAdminById(id);
-    await this.prisma.quoteMessage.create({ data: { quoteId: id, body: dto.body } });
+  async addAdminMessage(adminId: string, id: string, dto: CreateQuoteMessageDto) {
+    const quote = await this.findAdminById(id);
+    await this.prisma.quoteMessage.create({ data: { quoteId: id, userId: adminId, body: dto.body.trim(), fromStaff: true } });
+
+    void this.mail.send({
+      to: quote.customer.email,
+      subject: `New reply on your quote request ${quote.reference}`,
+      text: `Hello ${quote.customer.name},\n\nOur team replied to your quote request ${quote.reference}:\n\n${dto.body}`,
+    });
     return this.findAdminById(id);
   }
 
-  private findPublicById(id: string) {
-    return this.findAdminById(id);
+  /**
+   * Quotes the customer owns. Guest quotes are matched by email, but only for
+   * verified addresses, otherwise anyone could sign up with someone else's
+   * email and read their requests.
+   */
+  private ownedBy(viewer: Viewer): Prisma.QuoteWhereInput {
+    return {
+      OR: [
+        { userId: viewer.id },
+        ...(viewer.emailVerified ? [{ userId: null, email: { equals: viewer.email, mode: "insensitive" as const } }] : []),
+      ],
+    };
   }
 
-  private present(quote: any) {
+  private async createWithReference(data: Omit<Prisma.QuoteUncheckedCreateInput, "reference">) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await this.prisma.quote.create({ data: { ...data, reference: this.makeReference() }, include });
+      } catch (error) {
+        if (!isUniqueViolation(error) || attempt === 4) throw error;
+      }
+    }
+    throw new ConflictException("Could not generate a quote reference. Please try again.");
+  }
+
+  private makeReference() {
+    const now = new Date();
+    const day = `${String(now.getUTCFullYear()).slice(2)}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(now.getUTCDate()).padStart(2, "0")}`;
+    return `Q-${day}-${randomBytes(3).toString("hex").toUpperCase()}`;
+  }
+
+  private adminLink(id: string) {
+    const [origin] = getAllowedOrigins();
+    return origin ? `Open it: ${origin}/admin/quotes/${id}` : "";
+  }
+
+  private present(quote: QuoteWithRelations) {
     return {
       id: quote.id,
       reference: quote.reference,
       status: quote.status,
       submittedAt: quote.createdAt,
+      updatedAt: quote.updatedAt,
+      cancelledAt: quote.cancelledAt,
+      message: quote.message,
       customer: {
         name: quote.customerName,
         email: quote.email,
         phone: quote.phone,
       },
-      productLines: quote.items,
-      messages: quote.messages,
-      nextStepMessage: "Our team will review your request and contact you with a quote.",
+      productLines: quote.items.map((item) => ({
+        id: item.id,
+        quantity: item.quantity,
+        product: {
+          id: item.product.id,
+          slug: item.product.slug,
+          name: item.product.name,
+          image: item.product.images[0]?.url ?? null,
+        },
+      })),
+      messages: quote.messages.map((message) => ({
+        id: message.id,
+        body: message.body,
+        createdAt: message.createdAt,
+        sender: message.fromStaff ? ("STAFF" as const) : ("CUSTOMER" as const),
+      })),
     };
   }
 }

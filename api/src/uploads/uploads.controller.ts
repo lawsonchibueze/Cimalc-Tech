@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Post, Query } from "@nestjs/common";
 import { Roles } from "@thallesp/nestjs-better-auth";
 import { CreateUploadUrlDto } from "./dto/create-upload-url.dto.js";
-import { UploadsService } from "./uploads.service.js";
 import { ConfirmUploadDto } from "./dto/confirm-upload.dto.js";
+import { UploadsService } from "./uploads.service.js";
 
 @Roles(["ADMIN"])
 @Controller("admin/uploads")
@@ -19,8 +19,9 @@ export class UploadsController {
     return this.uploadsService.confirmUpload(dto);
   }
 
-  @Delete(":key")
-  deleteUpload(@Param("key") key: string) {
+  /** The key contains slashes, so it travels as a query parameter rather than a path segment. */
+  @Delete()
+  deleteUpload(@Query("key") key: string) {
     return this.uploadsService.deleteUpload(key);
   }
 }

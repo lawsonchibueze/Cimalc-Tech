@@ -7,11 +7,6 @@ import { AdminService } from "./admin.service.js";
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Get("dashboard/stats")
-  getDashboardStats() {
-    return this.adminService.getDashboardStats();
-  }
-
   @Get("stats")
   getStats() {
     return this.adminService.getDashboardStats();

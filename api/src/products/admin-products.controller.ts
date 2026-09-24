@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestj
 import { Roles } from "@thallesp/nestjs-better-auth";
 import { CreateProductDto } from "./dto/create-product.dto.js";
 import { UpdateProductDto } from "./dto/update-product.dto.js";
-import { ProductsQueryDto } from "./dto/products-query.dto.js";
+import { AdminProductsQueryDto } from "./dto/products-query.dto.js";
 import { ProductsService } from "./products.service.js";
 
 @Roles(["ADMIN"])
@@ -11,7 +11,7 @@ export class AdminProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll(@Query() query: ProductsQueryDto) {
+  findAll(@Query() query: AdminProductsQueryDto) {
     return this.productsService.findAdmin(query);
   }
 

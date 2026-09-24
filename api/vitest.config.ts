@@ -9,5 +9,9 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.spec.ts'],
+    // class-validator and class-transformer decorators need the Reflect polyfill.
+    setupFiles: ['reflect-metadata'],
+    // Services import PrismaService, which checks this at import time.
+    env: { DATABASE_URL: 'postgresql://test:test@localhost:5432/test' },
   },
 });

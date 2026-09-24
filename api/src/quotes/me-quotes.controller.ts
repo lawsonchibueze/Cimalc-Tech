@@ -9,11 +9,11 @@ export class MeQuotesController {
 
   @Get()
   findAll(@Session() session: UserSession<typeof auth>) {
-    return this.quotesService.findMine(session.user.id);
+    return this.quotesService.findMine(session.user);
   }
 
   @Get(":id")
   findOne(@Param("id") id: string, @Session() session: UserSession<typeof auth>) {
-    return this.quotesService.findMineById(session.user.id, id);
+    return this.quotesService.findMineById(session.user, id);
   }
 }

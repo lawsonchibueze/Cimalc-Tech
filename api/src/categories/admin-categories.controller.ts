@@ -11,7 +11,12 @@ export class AdminCategoriesController {
 
   @Get()
   findAll() {
-    return this.categoriesService.findAll();
+    return this.categoriesService.findAll("admin");
+  }
+
+  @Get(":id")
+  findOne(@Param("id") id: string) {
+    return this.categoriesService.findOne(id, "admin");
   }
 
   @Post()

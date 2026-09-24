@@ -29,7 +29,7 @@ export class ProductsController {
   }
 
   @Get(":slug")
-  findPublishedById(@Param("slug") slug: string) {
-    return this.productsService.findPublishedById(slug);
+  findPublishedBySlug(@Param("slug") slug: string) {
+    return this.productsService.findPublishedBySlug(slug);
   }
 }

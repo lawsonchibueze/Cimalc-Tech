@@ -183,12 +183,24 @@ model QuoteItem {
   @@index([productId])
 }
 
+model ContactMessage {
+  id        String    @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  handledAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([handledAt, createdAt])
+}
+
 model QuoteMessage {
   id        String   @id @default(cuid())
   quoteId   String
   quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   userId    String?
   body      String
+  fromStaff Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@index([quoteId, createdAt])

@@ -1,11 +1,13 @@
-import { IsEmail, IsInt, IsOptional, IsString, MaxLength, Min } from "class-validator";
+import { IsEmail, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 
 export class CreateQuoteDto {
   @IsString()
+  @MinLength(2)
   @MaxLength(120)
   customerName!: string;
 
   @IsEmail()
+  @MaxLength(254)
   email!: string;
 
   @IsOptional()
@@ -18,6 +20,7 @@ export class CreateQuoteDto {
 
   @IsInt()
   @Min(1)
+  @Max(10000)
   quantity!: number;
 
   @IsOptional()

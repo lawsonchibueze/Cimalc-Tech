@@ -1,5 +1,6 @@
-import { Controller, Get, Param } from "@nestjs/common";
+import { Controller, Get, Param, Query } from "@nestjs/common";
 import { AllowAnonymous } from "@thallesp/nestjs-better-auth";
+import { ProductsQueryDto } from "../products/dto/products-query.dto.js";
 import { CategoriesService } from "./categories.service.js";
 
 @AllowAnonymous()
@@ -18,7 +19,7 @@ export class CategoriesController {
   }
 
   @Get(":slug/products")
-  findProducts(@Param("slug") slug: string) {
-    return this.categoriesService.findProducts(slug);
+  findProducts(@Param("slug") slug: string, @Query() query: ProductsQueryDto) {
+    return this.categoriesService.findProducts(slug, query);
   }
 }

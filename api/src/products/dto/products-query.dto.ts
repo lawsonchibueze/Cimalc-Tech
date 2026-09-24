@@ -1,37 +1,44 @@
-import { Transform, Type } from "class-transformer";
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { Transform } from "class-transformer";
+import { IsBoolean, IsEnum, IsIn, IsOptional, IsString, MaxLength } from "class-validator";
+import { PaginationQueryDto } from "../../common/pagination.js";
+import { ProductStatus } from "../../generated/prisma/client.js";
 
-const productSorts = [
-  "createdAt_asc",
-  "createdAt_desc",
-  "name_asc",
-  "name_desc",
-] as const;
+export const productSorts = ["createdAt_asc", "createdAt_desc", "name_asc", "name_desc"] as const;
+export type ProductSort = (typeof productSorts)[number];
 
-export class ProductsQueryDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page = 1;
+/** Plain shape the service works with, so callers can copy it without class instance pitfalls. */
+export interface ProductListQuery {
+  page: number;
+  limit: number;
+  search?: string;
+  categoryId?: string;
+  sort: ProductSort;
+}
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit = 20;
-
+export class ProductsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
   @IsString()
+  @MaxLength(100)
   search?: string;
 
+  /** Category id or slug. */
   @IsOptional()
   @IsString()
   categoryId?: string;
 
   @IsOptional()
   @IsIn(productSorts)
-  sort: (typeof productSorts)[number] = "createdAt_desc";
+  sort: ProductSort = "createdAt_desc";
+}
+
+export class AdminProductsQueryDto extends ProductsQueryDto {
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
+
+  @IsOptional()
+  @Transform(({ value }) => (value === "true" ? true : value === "false" ? false : value))
+  @IsBoolean()
+  featured?: boolean;
 }

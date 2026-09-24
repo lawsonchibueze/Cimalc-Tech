@@ -1,28 +1,32 @@
 import { Type } from "class-transformer";
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min, ValidateNested } from "class-validator";
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateNested } from "class-validator";
 import { ProductStatus } from "../../generated/prisma/client.js";
+import { MAX_PRODUCT_IMAGES, SLUG_PATTERN } from "./create-product.dto.js";
+import { ProductImageDto } from "./product-image.dto.js";
 
 export class UpdateProductDto {
   @IsOptional()
   @IsString()
+  @MinLength(2)
+  @MaxLength(200)
   name?: string;
 
+  /** Only changes the slug when provided. Renaming a product keeps its URL stable. */
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  @Matches(SLUG_PATTERN, { message: "slug must use lowercase letters, numbers and single hyphens" })
   slug?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   description?: string;
-
-  @IsOptional()
-  @IsString()
-  image?: string;
 
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(5)
+  @ArrayMaxSize(MAX_PRODUCT_IMAGES)
   @ValidateNested({ each: true })
   @Type(() => ProductImageDto)
   images?: ProductImageDto[];
@@ -34,6 +38,7 @@ export class UpdateProductDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(1_000_000)
   stock?: number;
 
   @IsOptional()
@@ -41,29 +46,6 @@ export class UpdateProductDto {
   status?: ProductStatus;
 
   @IsOptional()
-  @IsOptional()
   @IsBoolean()
   featured?: boolean;
-}
-
-export class ProductImageDto {
-  @IsOptional()
-  @IsString()
-  key?: string;
-
-  @IsString()
-  url!: string;
-
-  @IsOptional()
-  @IsString()
-  alt?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isPrimary?: boolean;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  position!: number;
 }
