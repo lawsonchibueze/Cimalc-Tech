@@ -13,7 +13,23 @@ export async function getProductsByCategory(slug: string): Promise<Product[]> { 
 export async function getFeaturedProducts(): Promise<Product[]> { const result = await apiRequest<BackendProduct[] | { data?: BackendProduct[]; items?: BackendProduct[] }>("/products/featured"); const items = Array.isArray(result) ? result : result.data ?? result.items ?? []; return items.map(mapProduct); }
 export async function getNewArrivals(): Promise<Product[]> { const result = await apiRequest<BackendProduct[] | { data?: BackendProduct[]; items?: BackendProduct[] }>("/products/new-arrivals"); const items = Array.isArray(result) ? result : result.data ?? result.items ?? []; return items.map(mapProduct); }
 export async function getProductById(id: string): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/admin/products/" + id)); }
-export async function createProduct(input: ProductInput): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/admin/products", { method: "POST", body: JSON.stringify({ ...input, categoryId: input.categorySlug, images: input.images }) })); }
-export async function updateProduct(id: string, input: ProductInput): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/admin/products/" + id, { method: "PATCH", body: JSON.stringify({ ...input, categoryId: input.categorySlug, images: input.images }) })); }
+function toBackendProduct(input: ProductInput) {
+    return {
+        name: input.name,
+        description: input.description,
+        categoryId: input.categorySlug,
+        images: input.images?.map((image, index) => ({
+            key: image.storageKey ?? image.url,
+            url: image.url,
+            alt: image.alt,
+            isPrimary: index === 0,
+            position: index,
+        })),
+        stock: input.inStock ? 1 : 0,
+        status: "DRAFT",
+    };
+}
+export async function createProduct(input: ProductInput): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/admin/products", { method: "POST", body: JSON.stringify(toBackendProduct(input)) })); }
+export async function updateProduct(id: string, input: ProductInput): Promise<Product> { return mapProduct(await apiRequest<BackendProduct>("/admin/products/" + id, { method: "PATCH", body: JSON.stringify(toBackendProduct(input)) })); }
 export async function deleteProduct(id: string): Promise<void> { await apiRequest<void>("/admin/products/" + id, { method: "DELETE" }); }
 
