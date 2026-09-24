@@ -40,6 +40,11 @@
   --radius-lg: 1rem; /* 16px — modals */
 }
 
+/* Hero headline. Scales with the screen from phone to wide desktop. */
+@utility text-display {
+  font-size: clamp(2.75rem, 6.4vw, 5.5rem);
+}
+
 .dark {
   --color-background: #0d1728;
   --color-surface: #13233a;

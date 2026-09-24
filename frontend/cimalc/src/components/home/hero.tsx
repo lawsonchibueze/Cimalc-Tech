@@ -2,102 +2,100 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
-import { Button } from "../ui/button";
-import { MediaImage } from "@/components/ui/media-image";
+import { useReducedMotion } from "motion/react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, MessageCircle, Pause, Play } from "lucide-react";
 import { getCategories } from "@/lib/api/categories";
 import { categoryKeys } from "@/lib/queries/categories";
 import { siteConfig } from "@/lib/config/site";
-import { PLACEHOLDER_IMAGE } from "@/lib/media/image";
+import { HeroBackdrop } from "./hero-backdrop";
+import { HeroSearch } from "./hero-search";
+import { HeroStats } from "./hero-stats";
 
 const MAX_SLIDES = 4;
-const SLIDE_INTERVAL_MS = 6500;
+const SLIDE_INTERVAL_MS = 7000;
 
-interface Slide { key: string; kicker: string; title: string; copy: string; href: string; label: string; cta: string; image: string }
+interface Slide { key: string; label: string; href: string; image?: string }
 
-const fallbackSlide: Slide = {
-  key: "all",
-  kicker: "Welcome to Cimalc Tech.",
-  title: "Technology, selected for you.",
-  copy: siteConfig.shortDescription,
-  href: "/products",
-  label: "Products",
-  cta: "Browse products",
-  image: PLACEHOLDER_IMAGE,
-};
+const controlClass = "grid h-11 w-11 place-items-center border border-white/40 bg-black/25 text-white backdrop-blur transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white";
 
 export function Hero() {
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const reducedMotion = useReducedMotion();
   const { data: categories } = useQuery({ queryKey: categoryKeys.lists(), queryFn: getCategories });
 
-  // One slide per category that has products, so every link leads somewhere real.
+  // One slide per category that has products, so the picture always matches a real place to click.
   const slides = useMemo<Slide[]>(() => {
     const fromCategories = (categories ?? [])
       .filter((category) => category.productCount > 0)
       .slice(0, MAX_SLIDES)
-      .map((category) => ({
-        key: category.slug,
-        kicker: `We can help you find the right ${category.name.toLowerCase()}.`,
-        title: category.name,
-        copy: category.description ?? `Browse our ${category.name.toLowerCase()} and request a tailored quote.`,
-        href: `/categories/${category.slug}`,
-        label: category.name,
-        cta: `Explore ${category.name}`,
-        image: category.image ?? PLACEHOLDER_IMAGE,
-      }));
-    return fromCategories.length ? fromCategories : [fallbackSlide];
+      .map((category) => ({ key: category.slug, label: category.name, href: `/categories/${category.slug}`, image: category.image }));
+    return fromCategories.length ? fromCategories : [{ key: "all", label: "Our range", href: "/products" }];
   }, [categories]);
 
+  const autoplay = slides.length > 1 && !paused && !reducedMotion;
   useEffect(() => {
-    if (slides.length < 2) return;
+    if (!autoplay) return;
     const timer = window.setInterval(() => setActive((value) => (value + 1) % slides.length), SLIDE_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [slides.length]);
+  }, [autoplay, slides.length]);
 
   const index = active % slides.length;
   const slide = slides[index];
+  const go = (offset: number) => setActive((index + offset + slides.length) % slides.length);
+  const pad = (value: number) => String(value).padStart(2, "0");
 
   return (
-    <section className="relative flex overflow-hidden bg-brand text-white md:min-h-[min(88svh,900px)] dark:bg-hero">
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col justify-center">
-        <div className="grid items-center gap-10 px-4 py-12 sm:py-14 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:px-8 md:py-16 lg:gap-16 lg:py-20">
-          <div className="min-w-0 max-w-3xl">
-            <AnimatePresence mode="wait">
-              <motion.div key={slide.key} initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.45 }}>
-                <p className="text-base text-white/80 md:text-lg">{slide.kicker}</p>
-                <h1 className="mt-4 text-[clamp(2.5rem,6vw,5.75rem)] font-bold leading-[1.02] tracking-[-0.04em] [overflow-wrap:anywhere] md:mt-5">{slide.title}</h1>
-                <p className="mt-6 max-w-2xl text-lg leading-8 text-white/85 md:mt-8 md:text-xl md:leading-9 lg:text-2xl lg:leading-10">{slide.copy}</p>
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10 md:gap-4">
-                  <Button href={slide.href} variant="secondary" size="lg" className="min-h-14 border-white bg-white px-8 text-base text-brand hover:bg-white/90 md:text-lg">{slide.cta} <ArrowRight className="h-5 w-5" aria-hidden="true" /></Button>
-                  <Link href="/contact" className="inline-flex min-h-14 items-center justify-center rounded-sm border border-white/35 px-8 text-base font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:text-lg">Talk to our team</Link>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <div className="relative mx-auto w-full max-w-[min(100%,440px)] md:max-w-[min(100%,calc(78svh*0.8),620px)]">
-            <div className="absolute -inset-4 rotate-3 rounded-[2rem] border border-white/20 md:-inset-5" />
-            <AnimatePresence mode="wait">
-              <motion.div key={slide.key} initial={{ opacity: 0, x: 100, rotate: 8 }} animate={{ opacity: 1, x: 0, rotate: -3 }} exit={{ opacity: 0, x: -100, rotate: -8 }} transition={{ duration: 0.65, ease: "easeOut" }} className="relative overflow-hidden rounded-[1.5rem] border border-white/35 bg-white p-3 shadow-2xl md:rounded-[2rem] md:p-4">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-hero-soft md:rounded-2xl">
-                  <MediaImage src={slide.image} alt={slide.label + " collection"} fill sizes="(max-width: 768px) 92vw, 620px" loading={index === 0 ? "eager" : "lazy"} className="object-cover" />
-                </div>
-                <div className="flex items-center justify-between px-2 pb-1 pt-3 text-hero md:pt-4">
-                  <span className="truncate text-xs font-semibold uppercase tracking-[.16em] md:text-sm">{slide.label}</span>
-                  <span className="shrink-0 pl-3 font-mono text-xs text-accent md:text-sm">CIMALC / {String(index + 1).padStart(2, "0")}</span>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-        {slides.length > 1 && (
-          <div className="flex gap-2 px-4 pb-8 md:px-8">
-            {slides.map((item, slideIndex) => (
-              <button key={item.key} type="button" aria-label={`Show ${item.label}`} aria-current={slideIndex === index} onClick={() => setActive(slideIndex)} className={`h-2.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${slideIndex === index ? "w-12 bg-hero-accent" : "w-5 bg-white/30 hover:bg-white/50"}`} />
-            ))}
-          </div>
-        )}
+    <section aria-roledescription="carousel" aria-label="Featured categories" className="relative isolate overflow-hidden bg-hero text-white">
+      {/* Photo layers. Slides cross-fade and drift slowly, so the page feels alive without moving text. */}
+      <div className="absolute inset-0 -z-20">
+        {slides.map((item, itemIndex) => (
+          <HeroBackdrop key={item.key} image={item.image} active={itemIndex === index} reducedMotion={Boolean(reducedMotion)} />
+        ))}
       </div>
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-hero via-hero/80 to-hero/10" />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-hero/85 via-transparent to-transparent" />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_88%_12%,var(--color-brand),transparent_45%)] opacity-25" />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-60 [background-image:radial-gradient(rgba(255,255,255,0.09)_1px,transparent_1px)] [background-size:26px_26px]" />
+
+      <div className="mx-auto flex relative min-h-[600px] max-w-[1440px] flex-col justify-center px-4 py-14 md:min-h-[min(74svh,700px)] md:px-8 md:py-16">
+        <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-white md:text-sm">
+          <span className="h-5 w-1 bg-brand" aria-hidden="true" />
+          Electronics and gadgets in {siteConfig.address.locality}, Lagos
+        </p>
+        <h1 className="mt-5 text-display font-extrabold leading-[0.96] tracking-[-0.03em] md:mt-6">
+          <span className="block">Technology,</span>
+          <span className="block">selected</span>
+          <span className="block">for you.</span>
+        </h1>
+        <p className="mt-6 max-w-2xl text-lg leading-8 text-white/85 md:mt-8 md:text-xl md:leading-9">{siteConfig.description}</p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row md:mt-10">
+          <Link href="/products" className="inline-flex min-h-14 items-center justify-center gap-2 bg-brand px-8 text-base font-bold text-white shadow-lg shadow-black/30 transition-colors hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:text-lg">
+            Explore products <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          </Link>
+          <Link href="/contact" className="inline-flex min-h-14 items-center justify-center gap-2 border border-white/50 px-8 text-base font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:text-lg">
+            <MessageCircle className="h-5 w-5" aria-hidden="true" /> Talk to our team
+          </Link>
+        </div>
+        <div className="mt-6 md:mt-8"><HeroSearch /></div>
+
+        <div className="mt-10 flex flex-wrap items-center gap-3 xl:absolute xl:bottom-8 xl:right-28 xl:mt-0 xl:flex-col xl:items-end">
+          <Link href={slide.href} className="inline-flex items-center gap-2 bg-white/10 px-4 py-2.5 text-sm font-semibold backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+            {slide.label} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          {slides.length > 1 && (
+            <div className="flex items-center gap-2" role="group" aria-label="Slide controls">
+              <button type="button" aria-label="Previous slide" onClick={() => go(-1)} className={controlClass}><ArrowLeft className="h-4 w-4" aria-hidden="true" /></button>
+              <span className="px-2 font-mono text-sm font-semibold" aria-live="off">{pad(index + 1)} / {pad(slides.length)}</span>
+              <button type="button" aria-label="Next slide" onClick={() => go(1)} className={controlClass}><ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
+              <button type="button" aria-label={paused ? "Play slideshow" : "Pause slideshow"} aria-pressed={paused} onClick={() => setPaused((value) => !value)} className={`${controlClass} rounded-full`}>
+                {paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      <HeroStats />
     </section>
   );
 }

@@ -71,7 +71,7 @@ export function Header() {
               {simpleLinks.map((link) => <Link key={link.href} href={link.href} className={cn(navClass, pathname.startsWith(link.href) && "text-brand")}>{link.label}</Link>)}
             </nav>
           </div>
-          {searchForm("hidden max-w-sm flex-1 lg:block")}
+          {searchForm("hidden max-w-sm flex-1 xl:block")}
           <div className="flex shrink-0 items-center gap-1">
             <ThemeToggle />
             {isAdmin && <Link href="/admin" aria-label="Open admin area" className={iconButtonClass}><LayoutDashboard className="h-5 w-5" aria-hidden="true" /></Link>}
@@ -79,7 +79,7 @@ export function Header() {
             {user && <button type="button" aria-label="Sign out" onClick={() => signOut.mutate()} disabled={signOut.isPending} className={cn(iconButtonClass, "hidden sm:grid")}><LogOut className="h-5 w-5" aria-hidden="true" /></button>}
             <button type="button" aria-label="Open menu" aria-expanded={isDrawerOpen} aria-controls="mobile-navigation" onClick={() => setIsDrawerOpen(true)} className={cn(iconButtonClass, "lg:hidden")}><Menu className="h-5 w-5" aria-hidden="true" /></button>
           </div>
-          <div className="order-3 basis-full lg:hidden">{searchForm("w-full")}</div>
+          <div className="order-3 basis-full xl:hidden">{searchForm("w-full")}</div>
         </div>
       </header>
       <MobileNavDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} links={[...mainNav]} user={user} isAdmin={isAdmin} onSignOut={() => signOut.mutate()} />
