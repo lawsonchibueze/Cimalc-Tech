@@ -35,7 +35,7 @@ export function HeroBackdrop({ image, active, reducedMotion }: HeroBackdropProps
           </div>
         </>
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-hero via-hero to-brand/60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand via-brand to-black/40" />
       )}
     </motion.div>
   );
