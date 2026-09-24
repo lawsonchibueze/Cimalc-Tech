@@ -2,7 +2,6 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { admin } from "better-auth/plugins";
 import { PrismaClient } from "../generated/prisma/client.js";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -34,12 +33,6 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  plugins: [
-    admin({
-      adminRoles: ["ADMIN"],
-      defaultRole: "USER",
-    }),
-  ],
   ...(googleClientId && googleClientSecret
     ? {
         socialProviders: {

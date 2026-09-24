@@ -13,6 +13,7 @@ async function bootstrap() {
     origin: uiUrl ? [uiUrl] : false,
     credentials: true,
   });
+  
   app.useGlobalPipes(
     new ValidationPipe({
       forbidNonWhitelisted: true,
