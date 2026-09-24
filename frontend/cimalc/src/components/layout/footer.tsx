@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowUpRight, Mail, MessageCircle } from "lucide-react";
+import { ArrowUpRight, MessageCircle } from "lucide-react";
+import { ContactIconRow } from "./contact-icons";
 import { FooterAccountLinks } from "./footer-account-links";
 import { SiteLogo } from "./site-logo";
 import { siteConfig } from "@/lib/config/site";
@@ -13,7 +14,7 @@ const linkClass = "w-fit text-sm text-muted transition-colors hover:text-brand f
 const pillClass = "inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-xs font-medium text-default transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand";
 
 export function Footer() {
-  const { phone, address, email } = siteConfig;
+  const { phone, address } = siteConfig;
   return (
     <footer className="relative overflow-hidden border-t border-border bg-footer text-default">
       <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
@@ -34,9 +35,9 @@ export function Footer() {
               <a href={`tel:${phone.tel}`} className="block transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">{phone.display}</a>
               <p>{address.street},<br />{address.locality}, {address.region}.</p>
             </div>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 space-y-4">
+              <ContactIconRow />
               <Link href="/contact" className={pillClass}><MessageCircle className="h-4 w-4" aria-hidden="true" />Need help choosing?</Link>
-              {email && <a href={`mailto:${email}`} className={pillClass}><Mail className="h-4 w-4" aria-hidden="true" />Email us</a>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">

@@ -25,6 +25,8 @@ const organizationJsonLd = {
   logo: absoluteUrl(siteConfig.logo),
   description: siteConfig.description,
   telephone: siteConfig.phone.tel,
+  email: siteConfig.email,
+  sameAs: [siteConfig.instagram.url],
   address: {
     "@type": "PostalAddress",
     streetAddress: siteConfig.address.street,

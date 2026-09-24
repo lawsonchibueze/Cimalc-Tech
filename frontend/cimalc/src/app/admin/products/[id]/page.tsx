@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, ExternalLink, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { deleteProduct, getProductById, updateProduct } from "@/lib/api/products";
 import { errorMessage } from "@/lib/api/client";
@@ -64,7 +64,7 @@ export default function ProductDetailsPage() {
                         <div><dt className="text-sm text-muted">Web address</dt><dd className="mt-1 font-mono text-sm">/products/{product.slug}</dd></div>
                         <div><dt className="text-sm text-muted">Added</dt><dd className="mt-1 text-sm">{new Date(product.createdAt).toLocaleDateString(undefined, { dateStyle: "long" })}</dd></div>
                     </dl>
-                    <Link href="/admin/products" className="inline-block text-sm font-medium text-brand">&larr; Back to products</Link>
+                    <Link href="/admin/products" className="inline-flex items-center gap-2 text-sm font-medium text-brand"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to products</Link>
                 </div>
             </CardContent></Card>
             <Dialog isOpen={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete product">

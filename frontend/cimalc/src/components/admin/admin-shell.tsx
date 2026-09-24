@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { BarChart3, Boxes, FileText, FolderTree, Inbox, LogOut, Menu, Users, X } from "lucide-react";
+import { ArrowLeft, BarChart3, Boxes, FileText, FolderTree, Inbox, LogOut, Menu, Users, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -47,7 +47,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 <SiteLogo className="h-12 w-32" sizes="128px" />
                 <span className="sr-only">Admin workspace</span>
             </Link>
-            <Link href="/" className="mb-5 flex min-h-11 items-center rounded-sm px-3 text-sm font-medium text-muted transition-colors hover:bg-background hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">&larr; Back to storefront</Link>
+            <Link href="/" className="mb-5 flex min-h-11 items-center rounded-sm px-3 text-sm font-medium text-muted transition-colors hover:bg-background hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"><ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />Back to storefront</Link>
             <nav aria-label="Admin navigation" className="flex flex-col gap-1">
                 <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Workspace</p>
                 {navigation.map(({ href, label, icon: Icon, badge }) => {
@@ -63,7 +63,6 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 })}
             </nav>
             <div className="mt-auto space-y-3">
-                <div className="flex items-center justify-between gap-3 rounded-md bg-background p-3"><div><p className="text-xs font-semibold text-default">Appearance</p><p className="mt-1 text-xs text-muted">Switch theme</p></div><ThemeToggle /></div>
                 <div className="flex items-center gap-3 rounded-md bg-background p-3">
                     <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/10 text-xs font-bold text-brand" aria-hidden="true">{initials(user?.name)}</div>
                     <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-default">{user?.name}</p><p className="truncate text-xs text-muted">{user?.email}</p></div>
@@ -91,7 +90,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                         <div className="hidden sm:block"><Breadcrumb items={getBreadcrumbs(pathname)} /></div>
                         <span className="text-sm font-semibold text-default sm:hidden">Cimalc Tech Admin</span>
                     </div>
-                    <div className="grid h-9 w-9 place-items-center rounded-full bg-brand/10 text-xs font-bold text-brand" title={user?.name} aria-label={`Signed in as ${user?.name ?? "administrator"}`}>{initials(user?.name)}</div>
+                    <div className="flex items-center gap-3">
+                        <ThemeToggle />
+                        <div className="grid h-9 w-9 place-items-center rounded-full bg-brand/10 text-xs font-bold text-brand" title={user?.name} aria-label={`Signed in as ${user?.name ?? "administrator"}`}>{initials(user?.name)}</div>
+                    </div>
                 </header>
                 <main className="mx-auto max-w-[1600px] p-4 md:p-8">{children}</main>
             </div>

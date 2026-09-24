@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 import type { Category } from "@/types/category";
 
 /** Category card. Uses the image of a real product in the category, or a neutral tile when there is none. */
-export function CategoryTile({ category, sizes, className }: { category: Category; sizes: string; className?: string }) {
+export function CategoryTile({ category, sizes, className, decorative = false }: { category: Category; sizes: string; className?: string; /** A repeated copy used only for looping. Hidden from assistive tech and the tab order. */ decorative?: boolean }) {
   return (
-    <Link href={`/categories/${category.slug}`} className={cn("group relative block aspect-square overflow-hidden rounded-md border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand", className)}>
+    <Link href={`/categories/${category.slug}`} aria-hidden={decorative || undefined} tabIndex={decorative ? -1 : undefined} className={cn("group relative block aspect-square overflow-hidden rounded-md border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand", className)}>
       {category.image ? (
         <MediaImage src={category.image} alt="" fill sizes={sizes} className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105" />
       ) : (

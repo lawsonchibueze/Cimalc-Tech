@@ -19,7 +19,7 @@ Start the API first, see `../../api/README.md`. Sign up on the site, then follow
 | `NEXT_PUBLIC_API_URL` | Public URL of the API |
 | `NEXT_PUBLIC_SITE_URL` | This site's public URL, used for canonical links, the sitemap and structured data |
 | `NEXT_PUBLIC_MEDIA_URL` | Same value as `R2_PUBLIC_URL` in the API. Needed so product photos can be optimised |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | Optional. Shows an email button in the footer and on the contact page |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Optional. Overrides the official contact email in `site.ts` |
 | `AUTH_ENFORCE_PROTECTION` | Optional. Redirects signed out visitors early, needs a shared cookie domain |
 
 `NEXT_PUBLIC_` values are baked in at build time, so rebuild after changing them.
@@ -28,7 +28,7 @@ Start the API first, see `../../api/README.md`. Sign up on the site, then follow
 
 | Path | What it holds |
 | --- | --- |
-| `src/lib/config/site.ts` | Business name, phone, address and navigation. Edit here, not in components |
+| `src/lib/config/site.ts` | Business name, phone, email, Instagram, WhatsApp, address and navigation. Edit here, not in components |
 | `src/lib/config/upload.ts` | Image limits, mirrored from the API |
 | `src/lib/api/` | One module per API area. Errors are `ApiError` with the HTTP status |
 | `src/lib/auth/` | Auth client, the shared `useSession` hook and safe redirects |

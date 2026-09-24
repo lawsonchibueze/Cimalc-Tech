@@ -1,6 +1,7 @@
 "use client";
 
-import { Mail, MapPin, MessageCircle, Phone, Sparkles } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Sparkles } from "lucide-react";
+import { ContactDetailList } from "@/components/layout/contact-icons";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -14,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const iconBox = "grid h-10 w-10 shrink-0 place-items-center rounded-md bg-brand/10 text-brand";
-const detailLink = "flex items-center gap-3 text-default hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand";
 
 export default function ContactPage() {
     const { register, handleSubmit, reset, formState: { errors } } = useForm<ContactFormInput>({ resolver: zodResolver(contactFormSchema) });
@@ -23,7 +23,7 @@ export default function ContactPage() {
         onSuccess: () => { toast.success("Message sent. We’ll get back to you soon."); reset(); },
         onError: (error) => toast.error(errorMessage(error, "We could not send your message. Please try again.")),
     });
-    const { phone, address, email } = siteConfig;
+    const { address } = siteConfig;
 
     return (
         <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-8 md:py-12">
@@ -37,10 +37,9 @@ export default function ContactPage() {
                         <div className="flex gap-3"><span className={iconBox}><MessageCircle className="h-5 w-5" aria-hidden="true" /></span><div><p className="font-semibold">Product guidance</p><p className="mt-1 text-sm text-muted">Share your use case and we’ll point you in the right direction.</p></div></div>
                         <div className="flex gap-3"><span className={iconBox}><Mail className="h-5 w-5" aria-hidden="true" /></span><div><p className="font-semibold">Quote support</p><p className="mt-1 text-sm text-muted">We can help with quantities, alternatives, and availability.</p></div></div>
                     </div>
-                    <div className="mt-10 space-y-4 border-t border-border pt-8 text-sm">
-                        <a href={`tel:${phone.tel}`} className={detailLink}><Phone className="h-4 w-4 text-brand" aria-hidden="true" />{phone.display}</a>
-                        {email && <a href={`mailto:${email}`} className={detailLink}><Mail className="h-4 w-4 text-brand" aria-hidden="true" />{email}</a>}
-                        <p className="flex items-start gap-3 text-default"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" /><span>{address.street}, {address.locality}, {address.region}</span></p>
+                    <div className="mt-10 space-y-6 border-t border-border pt-8">
+                        <ContactDetailList />
+                        <p className="flex items-start gap-3 text-sm text-default"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" /><span>{address.street}, {address.locality}, {address.region}</span></p>
                     </div>
                 </div>
                 <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="rounded-lg border border-border bg-surface p-5 shadow-sm md:p-8">

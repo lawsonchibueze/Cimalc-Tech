@@ -59,43 +59,45 @@ export function Hero() {
   const slide = slides[index];
 
   return (
-    <section className="relative overflow-hidden bg-brand text-white dark:bg-hero">
-      <div className="mx-auto grid max-w-[1440px] items-center gap-12 px-4 py-16 md:grid-cols-[1fr_0.8fr] md:px-8 md:py-24">
-        <div className="max-w-2xl">
-          <AnimatePresence mode="wait">
-            <motion.div key={slide.key} initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.45 }}>
-              <p className="text-sm text-white/70">{slide.kicker}</p>
-              <h1 className="mt-4 text-4xl font-bold leading-[1.04] tracking-[-0.04em] sm:text-5xl md:text-7xl">{slide.title}</h1>
-              <p className="mt-6 max-w-lg text-base leading-7 text-white/80 md:text-lg">{slide.copy}</p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button href={slide.href} variant="secondary" size="lg">{slide.cta} <ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>
-                <Link href="/contact" className="inline-flex min-h-13 items-center justify-center rounded-sm px-5 text-sm text-white/90 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Talk to our team</Link>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+    <section className="relative flex overflow-hidden bg-brand text-white md:min-h-[min(88svh,900px)] dark:bg-hero">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col justify-center">
+        <div className="grid items-center gap-10 px-4 py-12 sm:py-14 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:px-8 md:py-16 lg:gap-16 lg:py-20">
+          <div className="min-w-0 max-w-3xl">
+            <AnimatePresence mode="wait">
+              <motion.div key={slide.key} initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.45 }}>
+                <p className="text-base text-white/80 md:text-lg">{slide.kicker}</p>
+                <h1 className="mt-4 text-[clamp(2.5rem,6vw,5.75rem)] font-bold leading-[1.02] tracking-[-0.04em] [overflow-wrap:anywhere] md:mt-5">{slide.title}</h1>
+                <p className="mt-6 max-w-2xl text-lg leading-8 text-white/85 md:mt-8 md:text-xl md:leading-9 lg:text-2xl lg:leading-10">{slide.copy}</p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10 md:gap-4">
+                  <Button href={slide.href} variant="secondary" size="lg" className="min-h-14 border-white bg-white px-8 text-base text-brand hover:bg-white/90 md:text-lg">{slide.cta} <ArrowRight className="h-5 w-5" aria-hidden="true" /></Button>
+                  <Link href="/contact" className="inline-flex min-h-14 items-center justify-center rounded-sm border border-white/35 px-8 text-base font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:text-lg">Talk to our team</Link>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <div className="relative mx-auto w-full max-w-[min(100%,440px)] md:max-w-[min(100%,calc(78svh*0.8),620px)]">
+            <div className="absolute -inset-4 rotate-3 rounded-[2rem] border border-white/20 md:-inset-5" />
+            <AnimatePresence mode="wait">
+              <motion.div key={slide.key} initial={{ opacity: 0, x: 100, rotate: 8 }} animate={{ opacity: 1, x: 0, rotate: -3 }} exit={{ opacity: 0, x: -100, rotate: -8 }} transition={{ duration: 0.65, ease: "easeOut" }} className="relative overflow-hidden rounded-[1.5rem] border border-white/35 bg-white p-3 shadow-2xl md:rounded-[2rem] md:p-4">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-hero-soft md:rounded-2xl">
+                  <MediaImage src={slide.image} alt={slide.label + " collection"} fill sizes="(max-width: 768px) 92vw, 620px" loading={index === 0 ? "eager" : "lazy"} className="object-cover" />
+                </div>
+                <div className="flex items-center justify-between px-2 pb-1 pt-3 text-hero md:pt-4">
+                  <span className="truncate text-xs font-semibold uppercase tracking-[.16em] md:text-sm">{slide.label}</span>
+                  <span className="shrink-0 pl-3 font-mono text-xs text-accent md:text-sm">CIMALC / {String(index + 1).padStart(2, "0")}</span>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
-        <div className="relative mx-auto w-full max-w-[420px]">
-          <div className="absolute -inset-4 rotate-3 rounded-[2rem] border border-white/20" />
-          <AnimatePresence mode="wait">
-            <motion.div key={slide.key} initial={{ opacity: 0, x: 100, rotate: 8 }} animate={{ opacity: 1, x: 0, rotate: -3 }} exit={{ opacity: 0, x: -100, rotate: -8 }} transition={{ duration: 0.65, ease: "easeOut" }} className="relative overflow-hidden rounded-[1.5rem] border border-white/35 bg-white p-3 shadow-2xl">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-hero-soft">
-                <MediaImage src={slide.image} alt={`${slide.label} collection`} fill sizes="(max-width: 768px) 90vw, 420px" loading={index === 0 ? "eager" : "lazy"} className="object-cover" />
-              </div>
-              <div className="flex items-center justify-between px-2 pb-1 pt-3 text-hero">
-                <span className="text-xs font-semibold uppercase tracking-[.16em]">{slide.label}</span>
-                <span className="font-mono text-xs text-accent">CIMALC / {String(index + 1).padStart(2, "0")}</span>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+        {slides.length > 1 && (
+          <div className="flex gap-2 px-4 pb-8 md:px-8">
+            {slides.map((item, slideIndex) => (
+              <button key={item.key} type="button" aria-label={`Show ${item.label}`} aria-current={slideIndex === index} onClick={() => setActive(slideIndex)} className={`h-2.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${slideIndex === index ? "w-12 bg-hero-accent" : "w-5 bg-white/30 hover:bg-white/50"}`} />
+            ))}
+          </div>
+        )}
       </div>
-      {slides.length > 1 && (
-        <div className="mx-auto flex max-w-[1440px] gap-2 px-4 pb-8 md:px-8">
-          {slides.map((item, slideIndex) => (
-            <button key={item.key} type="button" aria-label={`Show ${item.label}`} aria-current={slideIndex === index} onClick={() => setActive(slideIndex)} className={`h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${slideIndex === index ? "w-10 bg-hero-accent" : "w-4 bg-white/30"}`} />
-          ))}
-        </div>
-      )}
     </section>
   );
 }

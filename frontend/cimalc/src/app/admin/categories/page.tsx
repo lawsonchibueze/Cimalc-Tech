@@ -58,7 +58,7 @@ export default function AdminCategoriesPage() {
                                     <p className="mt-2 min-h-10 text-sm leading-5 text-muted">{category.description ?? "No description yet."}</p>
                                     <div className="mt-5 flex items-center justify-between border-t border-border pt-4 text-xs text-muted">
                                         <Link href={`/admin/products?category=${category.slug}`} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">{category.productCount} {category.productCount === 1 ? "product" : "products"}</Link>
-                                        <Link href={`/categories/${category.slug}`} className="font-medium text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">View storefront &nearr;</Link>
+                                        <Link href={`/categories/${category.slug}`} className="font-medium text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">View storefront</Link>
                                     </div>
                                 </motion.article>
                             ))}
