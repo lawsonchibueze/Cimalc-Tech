@@ -1,6 +1,6 @@
 import type { ContactFormInput } from "@/lib/validations/contact";
+import { apiRequest } from "./client";
 
 export async function submitContactForm(data: ContactFormInput): Promise<{ success: true }> {
-    // TODO: replace with a real POST /contact call once the backend endpoint exists.
-    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 700));
+    return apiRequest<{ success: true }>("/contact", { method: "POST", body: JSON.stringify(data) });
 }

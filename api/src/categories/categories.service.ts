@@ -15,8 +15,8 @@ export class CategoriesService {
   }
 
   async findOne(slug: string) {
-    const category = await this.prisma.category.findUnique({
-      where: { slug },
+    const category = await this.prisma.category.findFirst({
+      where: { OR: [{ slug }, { id: slug }] },
     });
 
     if (!category) {
@@ -28,7 +28,7 @@ export class CategoriesService {
 
   findProducts(id: string) {
     return this.prisma.product.findMany({
-      where: { category: { slug: id }, status: "PUBLISHED" },
+      where: { category: { OR: [{ slug: id }, { id }] }, status: "PUBLISHED" },
       include: { category: true, images: { orderBy: { position: "asc" } }, variants: true },
       orderBy: { createdAt: "desc" },
     });

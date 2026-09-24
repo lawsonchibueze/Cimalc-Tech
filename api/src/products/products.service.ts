@@ -21,7 +21,11 @@ export class ProductsService {
     const where: Prisma.ProductWhereInput = {
       status: ProductStatus.PUBLISHED,
       ...extraWhere,
-      ...(query.categoryId && { categoryId: query.categoryId }),
+      ...(query.categoryId && {
+        category: {
+          OR: [{ id: query.categoryId }, { slug: query.categoryId }],
+        },
+      }),
       ...(query.search && {
         OR: [
           { name: { contains: query.search, mode: "insensitive" } },
@@ -80,9 +84,21 @@ export class ProductsService {
   }
 
   findAdmin(query: ProductsQueryDto) {
+    const where: Prisma.ProductWhereInput = {
+      ...(query.categoryId && {
+        category: { OR: [{ id: query.categoryId }, { slug: query.categoryId }] },
+      }),
+      ...(query.search && {
+        OR: [
+          { name: { contains: query.search, mode: "insensitive" } },
+          { description: { contains: query.search, mode: "insensitive" } },
+        ],
+      }),
+    };
     return this.prisma.product.findMany({
+      where,
       include,
-      orderBy: { createdAt: "desc" },
+      orderBy: this.sort(query.sort),
       skip: (query.page - 1) * query.limit,
       take: query.limit,
     });
@@ -190,10 +206,14 @@ export class ProductsService {
 
     return {
       id: product.id,
+      slug: product.slug,
       name: product.name,
       description: product.description,
       image: product.image,
+      categoryId: product.categoryId,
+      categorySlug: product.category.slug,
       stock,
+      inStock: stock > 0,
       availability: stock > 0,
       category: product.category,
       images: product.images,
