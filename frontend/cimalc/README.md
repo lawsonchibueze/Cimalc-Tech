@@ -16,7 +16,8 @@ Start the API first, see `../../api/README.md`. Sign up on the site, then follow
 
 | Variable | Purpose |
 | --- | --- |
-| `NEXT_PUBLIC_API_URL` | Public URL of the API |
+| `BACKEND_URL` | Address of the API. Server side only. The site proxies `/backend` and `/api/auth` to it |
+| `NEXT_PUBLIC_API_URL` | Leave unset. Setting it bypasses the proxy and reintroduces cross-site cookie problems |
 | `NEXT_PUBLIC_SITE_URL` | This site's public URL, used for canonical links, the sitemap and structured data |
 | `NEXT_PUBLIC_MEDIA_URL` | Same value as `R2_PUBLIC_URL` in the API. Needed so product photos can be optimised |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Optional. Overrides the official contact email in `site.ts` |
@@ -39,7 +40,12 @@ Start the API first, see `../../api/README.md`. Sign up on the site, then follow
 
 The interface hides admin screens from people without the admin role, but the API is what actually enforces it. Every admin route rejects requests without an administrator session, so hiding a page is never the only protection.
 
-For sign-in to work across two sites, both must share a registrable domain, for example `shop.example.com` and `api.example.com`. Set `COOKIE_DOMAIN=example.com` in the API. Browsers that block third party cookies otherwise drop the session cookie.
+The site forwards `/backend` and `/api/auth` to the API, so the browser only talks to one origin and the session cookie is first party. Google sign-in needs two settings to match this:
+
+1. In the API, set `BETTER_AUTH_URL` and `UI_URL` to this site's address.
+2. In Google Cloud Console, add `<site address>/api/auth/callback/google` as an authorized redirect URI.
+
+Without the proxy, sign-in breaks in browsers that block third party cookies.
 
 ## Scripts
 

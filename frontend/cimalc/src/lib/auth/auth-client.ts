@@ -1,9 +1,9 @@
 "use client";
 
-import { ApiError, apiBaseUrl } from "@/lib/api/client";
+import { ApiError, authBaseUrl } from "@/lib/api/client";
 import type { SessionUser } from "@/types/user";
 
-const authApiUrl = `${apiBaseUrl.replace(/\/api\/auth$/, "")}/api/auth`;
+const authApiUrl = authBaseUrl;
 
 async function authRequest<T = unknown>(path: string, body: Record<string, unknown> = {}): Promise<T> {
   const response = await fetch(`${authApiUrl}${path}`, {
@@ -35,8 +35,8 @@ export const authClient = {
     email: (data: { email: string; password: string }) => authRequest("/sign-in/email", data),
 
     /** Starts Google sign-in. The browser leaves the site and returns to `callbackPath` on this origin. */
-    google: (callbackPath: string) =>
-      authRequest<{ url?: string }>("/sign-in/social", { provider: "google", callbackURL: absolute(callbackPath) }).then((result) => {
+    google: (callbackPath: string, errorPath = "/auth/sign-in") =>
+      authRequest<{ url?: string }>("/sign-in/social", { provider: "google", callbackURL: absolute(callbackPath), newUserCallbackURL: absolute(callbackPath), errorCallbackURL: absolute(errorPath) }).then((result) => {
         if (!result?.url) throw new Error("Google sign-in is not available right now.");
         window.location.assign(result.url);
       }),

@@ -34,15 +34,25 @@ const isProduction = betterAuthUrl.startsWith("https://");
 // party cookies require and which lets the frontend read it.
 const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined;
 
+const uiOrigins = getAllowedOrigins();
+// When the site proxies /api/auth to this API, BETTER_AUTH_URL is the site itself and the
+// browser only ever sees one origin, so cookies are first party and SameSite=Lax is enough.
+// Only a genuinely cross-site setup needs SameSite=None, which browsers may block.
+const proxiedBySite = uiOrigins.some((origin) => new URL(origin).host === new URL(betterAuthUrl).host);
+const crossSite = isProduction && !cookieDomain && !proxiedBySite;
+
 export const auth = betterAuth({
   baseURL: betterAuthUrl,
   secret: betterAuthSecret,
-  trustedOrigins: getAllowedOrigins(),
+  trustedOrigins: uiOrigins,
+  // Sign-in errors, for example a Google account that cannot be linked, land on the site
+  // with an error code instead of on the API root.
+  ...(uiOrigins[0] ? { onAPIError: { errorURL: `${uiOrigins[0]}/auth/sign-in` } } : {}),
   advanced: {
     defaultCookieAttributes: {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction && !cookieDomain ? "none" : "lax",
+      sameSite: crossSite ? "none" : "lax",
     },
     ...(cookieDomain ? { crossSubDomainCookies: { enabled: true, domain: cookieDomain } } : {}),
   },

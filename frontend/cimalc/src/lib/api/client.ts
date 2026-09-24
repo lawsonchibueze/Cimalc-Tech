@@ -1,4 +1,16 @@
-export const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+/**
+ * Where API calls go. By default the browser talks only to this site, and Next.js
+ * forwards /backend and /api/auth to the API (see next.config.ts). Cookies are
+ * then first party, so sign-in survives browsers that block third-party cookies.
+ * Setting NEXT_PUBLIC_API_URL skips the proxy and calls the API directly.
+ */
+const trimSlashes = (value: string) => value.replace(/\/+$/, "");
+const directUrl = process.env.NEXT_PUBLIC_API_URL ? trimSlashes(process.env.NEXT_PUBLIC_API_URL) : undefined;
+export const apiBaseUrl =
+  directUrl ?? (typeof window === "undefined" ? trimSlashes(process.env.BACKEND_URL ?? "http://localhost:8000") : "/backend");
+
+/** Base of the Better Auth routes. Same origin when proxied, which is what Google redirects back to. */
+export const authBaseUrl = directUrl ? `${directUrl.replace(/\/api\/auth$/, "")}/api/auth` : "/api/auth";
 
 /** An API error that keeps the HTTP status so callers can react to 401, 403 or 409. */
 export class ApiError extends Error {

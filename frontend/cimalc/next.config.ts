@@ -16,8 +16,19 @@ function mediaPatterns(): NonNullable<NonNullable<NextConfig["images"]>["remoteP
   }
 }
 
+/** Address of the API. Server side only, so it never reaches the browser. */
+const backendUrl = (process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // The browser only talks to this site. These rules forward to the API, which keeps
+  // session cookies first party and lets Google send people back to this address.
+  async rewrites() {
+    return [
+      { source: "/api/auth/:path*", destination: `${backendUrl}/api/auth/:path*` },
+      { source: "/backend/:path*", destination: `${backendUrl}/:path*` },
+    ];
+  },
   images: { remotePatterns: mediaPatterns() },
 };
 

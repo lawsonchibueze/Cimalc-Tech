@@ -29,12 +29,26 @@ const copy: Record<AuthMode, { title: string; intro: string; submit: string }> =
 
 const linkClass = "font-medium text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand";
 
+/** What to tell someone when Google sends them back with a problem code. */
+function oauthMessage(code: string | null) {
+    if (!code) return "";
+    const known: Record<string, string> = {
+        account_not_linked: "This email already has an account that has not been verified, so Google cannot be linked yet. Sign in with your password, or contact us for help.",
+        state_mismatch: "Your browser blocked part of the Google sign-in. Try again, and if it repeats, allow cookies for this site.",
+        state_security_mismatch: "Your browser blocked part of the Google sign-in. Try again, and if it repeats, allow cookies for this site.",
+        please_restart_the_process: "The Google sign-in expired. Please try again.",
+        access_denied: "Google sign-in was cancelled, or this Google account is not allowed to use it.",
+    };
+    return known[code] ?? "Google sign-in did not work. Please try again.";
+}
+
 export function AuthForm({ mode }: { mode: AuthMode }) {
     const router = useRouter();
     const params = useSearchParams();
     const queryClient = useQueryClient();
     const redirect = safeRedirectPath(params.get("redirect"));
     const token = params.get("token");
+    const oauthError = mode === "signin" || mode === "signup" ? oauthMessage(params.get("error")) : "";
     const linkProblem = mode === "reset" && (!token || params.get("error"));
 
     const [name, setName] = useState("");
@@ -139,7 +153,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                         {mode !== "reset" && <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />}
                         {mode !== "forgot" && <Input label={mode === "reset" ? "New password" : "Password"} type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === "signin" ? "current-password" : "new-password"} hint={mode === "signup" || mode === "reset" ? "Use at least 8 characters." : undefined} />}
                         {mode === "reset" && <Input label="Confirm new password" type="password" value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="new-password" />}
-                        {error && <p role="alert" className="rounded-sm bg-error-bg px-3 py-2 text-sm text-error">{error}</p>}
+                        {(error || oauthError) && <p role="alert" className="rounded-sm bg-error-bg px-3 py-2 text-sm text-error">{error || oauthError}</p>}
                         <Button type="submit" className="w-full" isLoading={loading}>{submitLabel}</Button>
                     </form>
                 </>
