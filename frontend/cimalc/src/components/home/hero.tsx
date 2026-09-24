@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, MessageCircle, Pause, Play } from 
 import { getCategories } from "@/lib/api/categories";
 import { categoryKeys } from "@/lib/queries/categories";
 import { siteConfig } from "@/lib/config/site";
-import { HeroBackdrop, HeroMobilePicture } from "./hero-backdrop";
+import { HeroBackdrop } from "./hero-backdrop";
 import { HeroStats } from "./hero-stats";
 
 const MAX_SLIDES = 4;
@@ -49,7 +49,7 @@ export function Hero() {
       {/* Photo layers. Slides cross-fade and drift slowly, so the page feels alive without moving text. */}
       <div className="absolute inset-0 -z-20">
         {slides.map((item, itemIndex) => (
-          <HeroBackdrop key={item.key} image={item.image} active={itemIndex === index} />
+          <HeroBackdrop key={item.key} image={item.image} active={itemIndex === index} reducedMotion={Boolean(reducedMotion)} />
         ))}
       </div>
       <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
@@ -73,8 +73,7 @@ export function Hero() {
             <MessageCircle className="h-5 w-5" aria-hidden="true" /> Talk to our team
           </Link>
         </div>
-        <HeroMobilePicture images={slides.map((item) => item.image)} index={index} />
-        <div className="mt-8 flex flex-wrap items-center gap-3 md:mt-10">
+        <div className="mt-8 flex flex-wrap items-center gap-3 xl:absolute xl:bottom-8 xl:right-28 xl:mt-0 xl:flex-col xl:items-end">
           <Link href={slide.href} className="inline-flex items-center gap-2 bg-white/10 px-4 py-2.5 text-sm font-semibold backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
             {slide.label} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </Link>
