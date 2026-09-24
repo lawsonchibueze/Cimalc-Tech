@@ -19,7 +19,6 @@ export class ProductsService {
 
   async findPublished(query: ProductsQueryDto, extraWhere: Prisma.ProductWhereInput = {}) {
     const where: Prisma.ProductWhereInput = {
-      status: ProductStatus.PUBLISHED,
       ...extraWhere,
       ...(query.categoryId && {
         category: {
@@ -58,7 +57,7 @@ export class ProductsService {
 
   async findPublishedById(id: string) {
     const product = await this.prisma.product.findFirst({
-      where: { slug: id, status: ProductStatus.PUBLISHED },
+      where: { slug: id },
       include,
     });
 
@@ -76,7 +75,7 @@ export class ProductsService {
 
   async findRelated(id: string, query: ProductsQueryDto) {
     const product = await this.prisma.product.findFirst({
-      where: { slug: id, status: ProductStatus.PUBLISHED },
+      where: { slug: id },
       select: { categoryId: true },
     });
     if (!product) throw new NotFoundException("Product not found");
@@ -112,7 +111,7 @@ export class ProductsService {
 
   async create(dto: CreateProductDto) {
     const category = await this.ensureCategory(dto.categoryId);
-    const images = this.validateImages(dto.images, dto.status);
+    const images = this.validateImages(dto.images);
     const { images: _images, ...productData } = dto;
     return this.prisma.product.create({
       data: {
@@ -128,7 +127,7 @@ export class ProductsService {
   async update(id: string, dto: UpdateProductDto) {
     await this.findById(id);
     const category = dto.categoryId ? await this.ensureCategory(dto.categoryId) : undefined;
-    const images = dto.images ? this.validateImages(dto.images, dto.status) : undefined;
+    const images = dto.images ? this.validateImages(dto.images) : undefined;
     const { images: _images, ...productData } = dto;
     return this.prisma.$transaction(async (tx) => {
       if (images) await tx.productImage.deleteMany({ where: { productId: id } });
@@ -169,12 +168,9 @@ export class ProductsService {
     return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
 
-  private validateImages(images: CreateProductDto["images"] | UpdateProductDto["images"], status?: ProductStatus) {
+  private validateImages(images: CreateProductDto["images"] | UpdateProductDto["images"]) {
     if (!images?.length || images.length > 5) {
       throw new BadRequestException("A product must have between 1 and 5 images");
-    }
-    if (status === ProductStatus.PUBLISHED && !images.length) {
-      throw new BadRequestException("Published products require an image");
     }
     if (images.filter((image) => image.isPrimary).length !== 1) {
       images[0].isPrimary = true;

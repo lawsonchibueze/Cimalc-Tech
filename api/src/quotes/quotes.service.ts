@@ -16,7 +16,7 @@ export class QuotesService {
 
   async create(dto: CreateQuoteDto, userId?: string) {
     const product = await this.prisma.product.findFirst({
-      where: { id: dto.productId, status: "PUBLISHED" },
+      where: { id: dto.productId },
     });
     if (!product) throw new NotFoundException("Product not found");
 
@@ -35,8 +35,9 @@ export class QuotesService {
     return this.present(quote);
   }
 
-  findMine(userId: string) {
-    return this.prisma.quote.findMany({ where: { userId }, include, orderBy: { createdAt: "desc" } });
+  async findMine(userId: string) {
+    const quotes = await this.prisma.quote.findMany({ where: { userId }, include, orderBy: { createdAt: "desc" } });
+    return quotes.map((quote) => this.present(quote));
   }
 
   async findMineById(userId: string, id: string) {
@@ -66,8 +67,9 @@ export class QuotesService {
     return this.findPublicById(id);
   }
 
-  findAdmin() {
-    return this.prisma.quote.findMany({ include, orderBy: { createdAt: "desc" } });
+  async findAdmin() {
+    const quotes = await this.prisma.quote.findMany({ include, orderBy: { createdAt: "desc" } });
+    return quotes.map((quote) => this.present(quote));
   }
 
   async findAdminById(id: string) {
@@ -78,7 +80,8 @@ export class QuotesService {
 
   async updateStatus(id: string, dto: UpdateQuoteStatusDto) {
     await this.findAdminById(id);
-    return this.prisma.quote.update({ where: { id }, data: { status: dto.status }, include });
+    const updated = await this.prisma.quote.update({ where: { id }, data: { status: dto.status }, include });
+    return this.present(updated);
   }
 
   async addAdminMessage(id: string, dto: CreateQuoteMessageDto) {

@@ -1,7 +1,7 @@
 ﻿"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Menu, Search, UserRound, ChevronDown } from "lucide-react";
 import { MobileNavDrawer } from "./mobile-nav-drawer";
@@ -11,6 +11,7 @@ import { getProducts } from "@/lib/api/products";
 import { getCategories } from "@/lib/api/categories";
 import { productKeys } from "@/lib/queries/products";
 import { categoryKeys } from "@/lib/queries/categories";
+import { authClient } from "@/lib/auth/auth-client";
 
 const navLinks = [{ href: "/about", label: "About" }, { href: "/contact", label: "Contact" }];
 
@@ -19,8 +20,11 @@ export function Header() {
   const [search, setSearch] = useState("");
   const pathname = usePathname();
   const router = useRouter();
+  const [session, setSession] = useState<{ user?: { role?: string } } | null>(null);
+  useEffect(() => { void authClient.getSession().then((value) => setSession(value)); }, []);
   const products = useQuery({ queryKey: productKeys.lists(), queryFn: getProducts });
   const categories = useQuery({ queryKey: categoryKeys.lists(), queryFn: getCategories });
+  const isAdmin = session?.user?.role === "ADMIN";
   function submit(event: React.FormEvent) { event.preventDefault(); if (search.trim()) router.push("/products?search=" + encodeURIComponent(search.trim())); }
   const searchForm = (className: string) => <form onSubmit={submit} className={cn("relative min-w-0", className)}><Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-brand/60" aria-hidden="true" /><input aria-label="Search products" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products" className="h-11 w-full rounded-full border border-border bg-surface pl-10 pr-4 text-sm text-default outline-none transition-all placeholder:text-muted focus:border-brand/40 focus:ring-4 focus:ring-accent/10" /></form>;
   const navClass = "group relative rounded-full px-3 py-2 text-sm font-medium text-default/80 transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand";

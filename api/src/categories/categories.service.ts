@@ -28,7 +28,7 @@ export class CategoriesService {
 
   findProducts(id: string) {
     return this.prisma.product.findMany({
-      where: { category: { OR: [{ slug: id }, { id }] }, status: "PUBLISHED" },
+      where: { category: { OR: [{ slug: id }, { id }] } },
       include: { category: true, images: { orderBy: { position: "asc" } }, variants: true },
       orderBy: { createdAt: "desc" },
     });
