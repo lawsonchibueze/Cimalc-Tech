@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { createContext, useContext } from "react";
 import { authClient } from "./auth-client";
 import { sessionKeys } from "@/lib/queries/account";
 import type { SessionUser } from "@/types/user";
@@ -23,7 +24,8 @@ export function useSession() {
   };
 }
 
-export function useSignOut() {
+/** Signs out for real. Used by the confirmation dialog, not by buttons directly. */
+export function useSignOutMutation() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -36,4 +38,11 @@ export function useSignOut() {
       router.replace("/");
     },
   });
+}
+
+export const SignOutContext = createContext<{ mutate: () => void; isPending: boolean }>({ mutate: () => undefined, isPending: false });
+
+/** For sign-out buttons. `mutate` asks the person to confirm before anything happens. */
+export function useSignOut() {
+  return useContext(SignOutContext);
 }
