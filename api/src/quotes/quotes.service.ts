@@ -314,22 +314,20 @@ export class QuotesService {
   }
 
   /**
-   * Quotes the customer owns. Guest quotes are matched by email, but only for
-   * verified addresses, otherwise anyone could sign up with someone else's
-   * email and read their requests.
+   * Quotes the customer owns. A quote requested as a guest carries no user id,
+   * so it is matched by email instead. The match deliberately does not require a
+   * verified address: email verification is not configured on this site, so
+   * requiring it hid a guest's own quote from them the moment they created an
+   * account with the same email.
    */
   private ownedBy(viewer: Viewer): Prisma.QuoteWhereInput {
     return {
       OR: [
         { userId: viewer.id },
-        ...(viewer.emailVerified
-          ? [
-              {
-                userId: null,
-                email: { equals: viewer.email, mode: 'insensitive' as const },
-              },
-            ]
-          : []),
+        {
+          userId: null,
+          email: { equals: viewer.email, mode: 'insensitive' as const },
+        },
       ],
     };
   }

@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { sendMail, type MailMessage } from "./mailer.js";
+import { Injectable, Logger } from '@nestjs/common';
+import { sendMail, type MailMessage } from './mailer.js';
 
 /** Nest wrapper around the framework independent mailer used by Better Auth. */
 @Injectable()
@@ -11,7 +11,11 @@ export class MailService {
     try {
       await sendMail(message);
     } catch (error) {
-      this.logger.warn(`Could not send "${message.subject}" to ${message.to}: ${error instanceof Error ? error.message : String(error)}`);
+      // Logged as an error, not a warning: a swallowed failure here is exactly
+      // what "the customer says no email ever arrived" looks like.
+      this.logger.error(
+        `Could not send "${message.subject}" to ${message.to}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 

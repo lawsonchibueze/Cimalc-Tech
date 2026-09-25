@@ -1,8 +1,13 @@
-import { Logger } from "@nestjs/common";
+import { Logger } from '@nestjs/common';
 
-export type MailMessage = { to: string; subject: string; text: string; replyTo?: string };
+export type MailMessage = {
+  to: string;
+  subject: string;
+  text: string;
+  replyTo?: string;
+};
 
-const logger = new Logger("Mailer");
+const logger = new Logger('Mailer');
 
 /**
  * Sends a transactional email through Resend's HTTP API, so no extra
@@ -15,18 +20,38 @@ export async function sendMail(message: MailMessage): Promise<void> {
   const from = process.env.MAIL_FROM;
 
   if (!apiKey || !from) {
-    logger.warn(`Email is not configured. Would have sent to ${message.to}\nSubject: ${message.subject}\n${message.text}`);
+    logger.warn(
+      `Email is not configured. Would have sent to ${message.to}\nSubject: ${message.subject}\n${message.text}`,
+    );
     return;
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [message.to], subject: message.subject, text: message.text, reply_to: message.replyTo }),
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to: [message.to],
+      subject: message.subject,
+      text: message.text,
+      reply_to: message.replyTo,
+    }),
     signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) {
-    throw new Error(`Mail provider responded with ${response.status}`);
+    // Resend explains every rejection in the body, for example an unverified
+    // sender domain. Without it the cause is invisible in the server log.
+    const detail = await response.text().catch(() => '');
+    const hint =
+      response.status === 403
+        ? ' Check that MAIL_FROM uses a domain verified in Resend.'
+        : '';
+    throw new Error(
+      `Mail provider responded with ${response.status}${detail ? `: ${detail}` : ''}${hint}`,
+    );
   }
 }
