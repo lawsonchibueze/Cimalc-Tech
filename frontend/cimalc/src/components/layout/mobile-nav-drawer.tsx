@@ -13,11 +13,10 @@ interface MobileNavDrawerProps {
   onClose: () => void;
   links: { href: string; label: string }[];
   user: SessionUser | null;
-  isAdmin: boolean;
   onSignOut: () => void;
 }
 
-export function MobileNavDrawer({ isOpen, onClose, links, user, isAdmin, onSignOut }: MobileNavDrawerProps) {
+export function MobileNavDrawer({ isOpen, onClose, links, user, onSignOut }: MobileNavDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
@@ -76,11 +75,13 @@ export function MobileNavDrawer({ isOpen, onClose, links, user, isAdmin, onSignO
               {user ? (
                 <>
                   <Button href="/account" variant="secondary" className="w-full" onClick={onClose}>My account</Button>
-                  {isAdmin && <Button href="/admin" variant="secondary" className="w-full" onClick={onClose}>Admin area</Button>}
                   <Button variant="ghost" className="w-full" onClick={() => { onClose(); onSignOut(); }}>Sign out</Button>
                 </>
               ) : (
-                <Button href="/auth/sign-in" variant="secondary" className="w-full" onClick={onClose}>Sign in to your account</Button>
+                <>
+                  <Button href="/auth/sign-up" variant="secondary" className="w-full" onClick={onClose}>Get started</Button>
+                  <Button href="/auth/sign-in" variant="ghost" className="w-full" onClick={onClose}>Sign in</Button>
+                </>
               )}
             </div>
             <p className="mt-auto pt-10 text-xs leading-5 text-muted">Need help choosing? Our team can help you find the right fit.</p>

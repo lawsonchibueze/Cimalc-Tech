@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, MessageCircle } from "lucide-react";
+import { ArrowUpRight, LayoutDashboard, MessageCircle } from "lucide-react";
 import { ContactIconRow } from "./contact-icons";
 import { FooterAccountLinks } from "./footer-account-links";
 import { SiteLogo } from "./site-logo";
@@ -55,7 +55,10 @@ export function Footer() {
         </div>
         <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
           <span className="font-mono">© {new Date().getFullYear()} {siteConfig.name}</span>
-          <span>Prices are confirmed through personalized quotes.</span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+            <span>Prices are confirmed through personalized quotes.</span>
+            <Link href="/admin" className="inline-flex min-h-9 w-fit items-center gap-2 rounded-full border border-border px-3 font-medium text-default transition-colors hover:border-brand/40 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"><LayoutDashboard className="h-3.5 w-3.5" aria-hidden="true" />Staff portal</Link>
+          </div>
         </div>
       </div>
     </footer>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, LayoutDashboard, LogOut, Menu, Search, UserRound } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Search, UserRound } from "lucide-react";
 import { MobileNavDrawer } from "./mobile-nav-drawer";
 import { SiteLogo } from "./site-logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -28,7 +28,7 @@ export function Header() {
   const [search, setSearch] = useState("");
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAdmin } = useSession();
+  const { user, isPending } = useSession();
   const signOut = useSignOut();
   const products = useQuery({ queryKey: productKeys.menu(), queryFn: () => getProducts({ limit: MENU_PRODUCT_COUNT }) });
   const categories = useQuery({ queryKey: categoryKeys.lists(), queryFn: getCategories });
@@ -74,15 +74,15 @@ export function Header() {
           {searchForm("hidden max-w-sm flex-1 xl:block")}
           <div className="flex shrink-0 items-center gap-1">
             <ThemeToggle />
-            {isAdmin && <Link href="/admin" aria-label="Open admin area" className={iconButtonClass}><LayoutDashboard className="h-5 w-5" aria-hidden="true" /></Link>}
-            <Link href={user ? "/account" : "/auth/sign-in"} aria-label={user ? "My account" : "Sign in"} className={iconButtonClass}><UserRound className="h-5 w-5" aria-hidden="true" /></Link>
+            {user && <Link href="/account" aria-label="My account" className={iconButtonClass}><UserRound className="h-5 w-5" aria-hidden="true" /></Link>}
+            {!user && !isPending && <Link href="/auth/sign-up" className="ml-1 inline-flex min-h-10 items-center justify-center rounded-sm bg-logo px-3 text-sm font-bold text-white transition-colors hover:bg-logo/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:min-h-11 sm:px-5">Get started</Link>}
             {user && <button type="button" aria-label="Sign out" onClick={() => signOut.mutate()} disabled={signOut.isPending} className={cn(iconButtonClass, "hidden sm:grid")}><LogOut className="h-5 w-5" aria-hidden="true" /></button>}
             <button type="button" aria-label="Open menu" aria-expanded={isDrawerOpen} aria-controls="mobile-navigation" onClick={() => setIsDrawerOpen(true)} className={cn(iconButtonClass, "lg:hidden")}><Menu className="h-5 w-5" aria-hidden="true" /></button>
           </div>
           <div className="order-3 basis-full xl:hidden">{searchForm("w-full")}</div>
         </div>
       </header>
-      <MobileNavDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} links={[...mainNav]} user={user} isAdmin={isAdmin} onSignOut={() => signOut.mutate()} />
+      <MobileNavDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} links={[...mainNav]} user={user} onSignOut={() => signOut.mutate()} />
     </>
   );
 }

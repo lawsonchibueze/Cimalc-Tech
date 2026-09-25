@@ -5,6 +5,7 @@
   /* Brand */
   --color-brand: #8b1e2d;
   --color-accent: #234f9b;
+  --color-logo: #d6101a; /* The red in the Cimalc logo. White text on it passes WCAG AA. */
   --color-payment: #f5a623; /* Reserved exclusively for payment-related UI. Never use for general actions. */
 
   /* Hero banner */
