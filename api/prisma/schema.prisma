@@ -177,6 +177,10 @@ model QuoteItem {
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
   quantity  Int
+  /// Whole naira price per unit, set when staff answer the request.
+  unitPrice Int?
+  /// Whether the product can be supplied, set when staff answer the request.
+  availability Boolean?
   createdAt DateTime @default(now())
 
   @@index([quoteId])

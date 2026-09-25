@@ -28,10 +28,12 @@ export type AggregateQuoteItem = {
 
 export type QuoteItemAvgAggregateOutputType = {
   quantity: number | null
+  unitPrice: number | null
 }
 
 export type QuoteItemSumAggregateOutputType = {
   quantity: number | null
+  unitPrice: number | null
 }
 
 export type QuoteItemMinAggregateOutputType = {
@@ -39,6 +41,8 @@ export type QuoteItemMinAggregateOutputType = {
   quoteId: string | null
   productId: string | null
   quantity: number | null
+  unitPrice: number | null
+  availability: boolean | null
   createdAt: Date | null
 }
 
@@ -47,6 +51,8 @@ export type QuoteItemMaxAggregateOutputType = {
   quoteId: string | null
   productId: string | null
   quantity: number | null
+  unitPrice: number | null
+  availability: boolean | null
   createdAt: Date | null
 }
 
@@ -55,6 +61,8 @@ export type QuoteItemCountAggregateOutputType = {
   quoteId: number
   productId: number
   quantity: number
+  unitPrice: number
+  availability: number
   createdAt: number
   _all: number
 }
@@ -62,10 +70,12 @@ export type QuoteItemCountAggregateOutputType = {
 
 export type QuoteItemAvgAggregateInputType = {
   quantity?: true
+  unitPrice?: true
 }
 
 export type QuoteItemSumAggregateInputType = {
   quantity?: true
+  unitPrice?: true
 }
 
 export type QuoteItemMinAggregateInputType = {
@@ -73,6 +83,8 @@ export type QuoteItemMinAggregateInputType = {
   quoteId?: true
   productId?: true
   quantity?: true
+  unitPrice?: true
+  availability?: true
   createdAt?: true
 }
 
@@ -81,6 +93,8 @@ export type QuoteItemMaxAggregateInputType = {
   quoteId?: true
   productId?: true
   quantity?: true
+  unitPrice?: true
+  availability?: true
   createdAt?: true
 }
 
@@ -89,6 +103,8 @@ export type QuoteItemCountAggregateInputType = {
   quoteId?: true
   productId?: true
   quantity?: true
+  unitPrice?: true
+  availability?: true
   createdAt?: true
   _all?: true
 }
@@ -184,6 +200,8 @@ export type QuoteItemGroupByOutputType = {
   quoteId: string
   productId: string
   quantity: number
+  unitPrice: number | null
+  availability: boolean | null
   createdAt: Date
   _count: QuoteItemCountAggregateOutputType | null
   _avg: QuoteItemAvgAggregateOutputType | null
@@ -215,6 +233,8 @@ export type QuoteItemWhereInput = {
   quoteId?: Prisma.StringFilter<"QuoteItem"> | string
   productId?: Prisma.StringFilter<"QuoteItem"> | string
   quantity?: Prisma.IntFilter<"QuoteItem"> | number
+  unitPrice?: Prisma.IntNullableFilter<"QuoteItem"> | number | null
+  availability?: Prisma.BoolNullableFilter<"QuoteItem"> | boolean | null
   createdAt?: Prisma.DateTimeFilter<"QuoteItem"> | Date | string
   quote?: Prisma.XOR<Prisma.QuoteScalarRelationFilter, Prisma.QuoteWhereInput>
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
@@ -225,6 +245,8 @@ export type QuoteItemOrderByWithRelationInput = {
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
+  unitPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  availability?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   quote?: Prisma.QuoteOrderByWithRelationInput
   product?: Prisma.ProductOrderByWithRelationInput
@@ -238,6 +260,8 @@ export type QuoteItemWhereUniqueInput = Prisma.AtLeast<{
   quoteId?: Prisma.StringFilter<"QuoteItem"> | string
   productId?: Prisma.StringFilter<"QuoteItem"> | string
   quantity?: Prisma.IntFilter<"QuoteItem"> | number
+  unitPrice?: Prisma.IntNullableFilter<"QuoteItem"> | number | null
+  availability?: Prisma.BoolNullableFilter<"QuoteItem"> | boolean | null
   createdAt?: Prisma.DateTimeFilter<"QuoteItem"> | Date | string
   quote?: Prisma.XOR<Prisma.QuoteScalarRelationFilter, Prisma.QuoteWhereInput>
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
@@ -248,6 +272,8 @@ export type QuoteItemOrderByWithAggregationInput = {
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
+  unitPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  availability?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.QuoteItemCountOrderByAggregateInput
   _avg?: Prisma.QuoteItemAvgOrderByAggregateInput
@@ -264,12 +290,16 @@ export type QuoteItemScalarWhereWithAggregatesInput = {
   quoteId?: Prisma.StringWithAggregatesFilter<"QuoteItem"> | string
   productId?: Prisma.StringWithAggregatesFilter<"QuoteItem"> | string
   quantity?: Prisma.IntWithAggregatesFilter<"QuoteItem"> | number
+  unitPrice?: Prisma.IntNullableWithAggregatesFilter<"QuoteItem"> | number | null
+  availability?: Prisma.BoolNullableWithAggregatesFilter<"QuoteItem"> | boolean | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"QuoteItem"> | Date | string
 }
 
 export type QuoteItemCreateInput = {
   id?: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
   quote: Prisma.QuoteCreateNestedOneWithoutItemsInput
   product: Prisma.ProductCreateNestedOneWithoutQuoteItemsInput
@@ -280,12 +310,16 @@ export type QuoteItemUncheckedCreateInput = {
   quoteId: string
   productId: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
 }
 
 export type QuoteItemUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   quote?: Prisma.QuoteUpdateOneRequiredWithoutItemsNestedInput
   product?: Prisma.ProductUpdateOneRequiredWithoutQuoteItemsNestedInput
@@ -296,6 +330,8 @@ export type QuoteItemUncheckedUpdateInput = {
   quoteId?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -304,12 +340,16 @@ export type QuoteItemCreateManyInput = {
   quoteId: string
   productId: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
 }
 
 export type QuoteItemUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -318,6 +358,8 @@ export type QuoteItemUncheckedUpdateManyInput = {
   quoteId?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -336,11 +378,14 @@ export type QuoteItemCountOrderByAggregateInput = {
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
+  unitPrice?: Prisma.SortOrder
+  availability?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type QuoteItemAvgOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
+  unitPrice?: Prisma.SortOrder
 }
 
 export type QuoteItemMaxOrderByAggregateInput = {
@@ -348,6 +393,8 @@ export type QuoteItemMaxOrderByAggregateInput = {
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
+  unitPrice?: Prisma.SortOrder
+  availability?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -356,11 +403,14 @@ export type QuoteItemMinOrderByAggregateInput = {
   quoteId?: Prisma.SortOrder
   productId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
+  unitPrice?: Prisma.SortOrder
+  availability?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type QuoteItemSumOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
+  unitPrice?: Prisma.SortOrder
 }
 
 export type QuoteItemCreateNestedManyWithoutProductInput = {
@@ -447,9 +497,23 @@ export type QuoteItemUncheckedUpdateManyWithoutQuoteNestedInput = {
   deleteMany?: Prisma.QuoteItemScalarWhereInput | Prisma.QuoteItemScalarWhereInput[]
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type NullableBoolFieldUpdateOperationsInput = {
+  set?: boolean | null
+}
+
 export type QuoteItemCreateWithoutProductInput = {
   id?: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
   quote: Prisma.QuoteCreateNestedOneWithoutItemsInput
 }
@@ -458,6 +522,8 @@ export type QuoteItemUncheckedCreateWithoutProductInput = {
   id?: string
   quoteId: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
 }
 
@@ -495,12 +561,16 @@ export type QuoteItemScalarWhereInput = {
   quoteId?: Prisma.StringFilter<"QuoteItem"> | string
   productId?: Prisma.StringFilter<"QuoteItem"> | string
   quantity?: Prisma.IntFilter<"QuoteItem"> | number
+  unitPrice?: Prisma.IntNullableFilter<"QuoteItem"> | number | null
+  availability?: Prisma.BoolNullableFilter<"QuoteItem"> | boolean | null
   createdAt?: Prisma.DateTimeFilter<"QuoteItem"> | Date | string
 }
 
 export type QuoteItemCreateWithoutQuoteInput = {
   id?: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
   product: Prisma.ProductCreateNestedOneWithoutQuoteItemsInput
 }
@@ -509,6 +579,8 @@ export type QuoteItemUncheckedCreateWithoutQuoteInput = {
   id?: string
   productId: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
 }
 
@@ -542,12 +614,16 @@ export type QuoteItemCreateManyProductInput = {
   id?: string
   quoteId: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
 }
 
 export type QuoteItemUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   quote?: Prisma.QuoteUpdateOneRequiredWithoutItemsNestedInput
 }
@@ -556,6 +632,8 @@ export type QuoteItemUncheckedUpdateWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quoteId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -563,6 +641,8 @@ export type QuoteItemUncheckedUpdateManyWithoutProductInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quoteId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -570,12 +650,16 @@ export type QuoteItemCreateManyQuoteInput = {
   id?: string
   productId: string
   quantity: number
+  unitPrice?: number | null
+  availability?: boolean | null
   createdAt?: Date | string
 }
 
 export type QuoteItemUpdateWithoutQuoteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   product?: Prisma.ProductUpdateOneRequiredWithoutQuoteItemsNestedInput
 }
@@ -584,6 +668,8 @@ export type QuoteItemUncheckedUpdateWithoutQuoteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -591,6 +677,8 @@ export type QuoteItemUncheckedUpdateManyWithoutQuoteInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   productId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  unitPrice?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  availability?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -601,6 +689,8 @@ export type QuoteItemSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   quoteId?: boolean
   productId?: boolean
   quantity?: boolean
+  unitPrice?: boolean
+  availability?: boolean
   createdAt?: boolean
   quote?: boolean | Prisma.QuoteDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -611,6 +701,8 @@ export type QuoteItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   quoteId?: boolean
   productId?: boolean
   quantity?: boolean
+  unitPrice?: boolean
+  availability?: boolean
   createdAt?: boolean
   quote?: boolean | Prisma.QuoteDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -621,6 +713,8 @@ export type QuoteItemSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   quoteId?: boolean
   productId?: boolean
   quantity?: boolean
+  unitPrice?: boolean
+  availability?: boolean
   createdAt?: boolean
   quote?: boolean | Prisma.QuoteDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -631,10 +725,12 @@ export type QuoteItemSelectScalar = {
   quoteId?: boolean
   productId?: boolean
   quantity?: boolean
+  unitPrice?: boolean
+  availability?: boolean
   createdAt?: boolean
 }
 
-export type QuoteItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "quoteId" | "productId" | "quantity" | "createdAt", ExtArgs["result"]["quoteItem"]>
+export type QuoteItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "quoteId" | "productId" | "quantity" | "unitPrice" | "availability" | "createdAt", ExtArgs["result"]["quoteItem"]>
 export type QuoteItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   quote?: boolean | Prisma.QuoteDefaultArgs<ExtArgs>
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -659,6 +755,14 @@ export type $QuoteItemPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     quoteId: string
     productId: string
     quantity: number
+    /**
+     * Whole naira price per unit, set when staff answer the request.
+     */
+    unitPrice: number | null
+    /**
+     * Whether the product can be supplied, set when staff answer the request.
+     */
+    availability: boolean | null
     createdAt: Date
   }, ExtArgs["result"]["quoteItem"]>
   composites: {}
@@ -1089,6 +1193,8 @@ export interface QuoteItemFieldRefs {
   readonly quoteId: Prisma.FieldRef<"QuoteItem", 'String'>
   readonly productId: Prisma.FieldRef<"QuoteItem", 'String'>
   readonly quantity: Prisma.FieldRef<"QuoteItem", 'Int'>
+  readonly unitPrice: Prisma.FieldRef<"QuoteItem", 'Int'>
+  readonly availability: Prisma.FieldRef<"QuoteItem", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"QuoteItem", 'DateTime'>
 }
     

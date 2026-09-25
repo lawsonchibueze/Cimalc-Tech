@@ -220,6 +220,8 @@ export const QuoteItemScalarFieldEnum = {
   quoteId: 'quoteId',
   productId: 'productId',
   quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  availability: 'availability',
   createdAt: 'createdAt'
 } as const
 
